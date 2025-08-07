@@ -72,18 +72,47 @@ export class Ball implements Drawable {
     }
 
     private collideWithWalls(newPos: Vec) {
-        for (let i = 0; i < GAME.levelGeo.length - 1; i++) {
-            const p1 = GAME.levelGeo[i];
-            const p2 = GAME.levelGeo[i+1];
-            // If it's a vertical wall, the ball is between the vertical bounds of the wall, and it's moved onto the other side of the wall
-            if (p1[0] === p2[0] && isBetween(newPos.y, p1[1], p2[1]) && (newPos.x > p1[0]) !== (this.position.x > p1[0])) {
-                this.velocity.x *= -1;
-                newPos.x = p1[0] + Number(newPos.x < p1[0]);
+        const oldP = this.position.arr();
+        const newP = newPos.arr();
+        walls: for (let i = 0; i < GAME.levelGeo.length - 1; i++) {
+            const p1 = GAME.levelGeo[i].arr();
+            const p2 = GAME.levelGeo[i+1].arr();
+
+            // 0: x, 1: y
+            for (const axis of [0, 1]) {
+                const opp = Number(!axis);
+                // Is the wall perpendicular to this axis?
+                if (p1[axis] === p2[axis]) {
+                    if (
+                        isBetween(newP[opp], p1[opp], p2[opp], this.radius) && // Is the new position of the ball between its bounds?
+                        (newP[axis] > p1[axis]) !== (oldP[axis] > p1[axis]) // Has the ball started and ended on different sides of the wall?
+                    ) {
+                        if (axis === 0)
+                            this.velocity.x *= -1;
+                        else
+                            this.velocity.y *= -1;
+                        newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]);
+                        newPos = new Vec(...newP);
+                        console.debug(`Ball collided with ${axis === 0 ? 'vertical' : 'horizontal'} wall.`)
+                    }
+                    continue walls;
+                }
             }
-            // If it's a horizontal wall, the ball is between the horizontal bounds of the wall, and it's moved onto the other side of the wall
-            if (p1[1] === p2[1] && isBetween(newPos.x, p1[0], p2[0]) && (newPos.y > p1[1]) !== (this.position.y > p1[1])) {
-                this.velocity.y *= -1;
-                newPos.y = p1[1] + Number(newPos.y < p1[1]);
+
+            // The wall is not horiz/vert so must be diagonal (because I don't support any others lol)
+
+            // Is the ball in the wall's bounding box?
+            if (isBetween(newP[0], p1[0], p2[0]) && isBetween(newP[1], p1[1], p2[1])) {
+                const ball2Wall = this.position.sub(GAME.levelGeo[i]);
+                const newBall2Wall = newPos.sub(GAME.levelGeo[i]);
+                // Has the ball started and ended on different sides of the wall?
+                if ((Math.abs(ball2Wall.x) > Math.abs(ball2Wall.y)) !== (Math.abs(newBall2Wall.x) > Math.abs(newBall2Wall.y))) {
+                    const {x, y} = this.velocity;
+                    this.velocity.x = -1 * y;
+                    this.velocity.y = -1 * x;
+                    newPos = this.position; // not ideal since the ball will visually bounce against nothing.
+                    console.debug(`Ball collided with diagonal wall.`)
+                }
             }
         }
         return newPos;
@@ -108,8 +137,8 @@ export class Ball implements Drawable {
     }
 }
 
-function isBetween(n: number, b1: number, b2: number) {
-    const upper = Math.max(b1, b2);
-    const lower = Math.min(b1, b2);
+function isBetween(n: number, b1: number, b2: number, tolerance: number = 0) {
+    const upper = Math.max(b1, b2) + tolerance;
+    const lower = Math.min(b1, b2) - tolerance;
     return n > lower && n < upper;
 }
