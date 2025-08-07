@@ -28,8 +28,8 @@ canvas.addElement(el(c => {
     for (const point of GAME.levelGeo) {
         c.path(new Vec(...point))
     }
-    c.fill("#f2a7e8");
     c.stroke(20, "#bd77b3");
+    c.fill("#f2a7e8");
 }))
 canvas.addElement(ball);
 
