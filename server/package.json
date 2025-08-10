@@ -1,0 +1,11 @@
+{
+  "name": "server",
+  "module": "main.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.2.19"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

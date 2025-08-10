@@ -1,22 +1,26 @@
-import {Canvas, type Drawable, Vec} from "./lib.ts";
-import {GAME} from "./main.ts";
+import type {Canvas, Drawable} from "../lib.ts";
+import {Vec} from "./vec.ts";
+import {GAME} from "./config.ts";
+import {sendPacket} from "./packets.ts";
 
 export class Ball implements Drawable {
     public position: Vec;
     public velocity = new Vec(0, 0);
     public radius = 20;
 
+    public static ALL: Record<string, Ball> = {};
+
+    // Client props
     private dragging = false;
     private mouse = new Vec(0, 0);
+    public static ws: WebSocket;
 
-    private static ALL: Ball[] = [];
-
-    constructor(public isPlayer = false, position?: Vec) {
+    constructor(public id: string, public client = false, position?: Vec) {
         this.position = position || new Vec(50, 100);
-        Ball.ALL.push(this);
+        Ball.ALL[id] = this;
 
         // maybe remove these listeners on destruction?
-        if (this.isPlayer) {
+        if (this.client) {
             const main = document.getElementById("main")!;
             document.getElementById("hover")!.addEventListener("mousedown", () => {
                 this.dragging = true;
@@ -33,6 +37,7 @@ export class Ball implements Drawable {
         }
     }
 
+    // Clientside method
     putt(ev: MouseEvent) {
         if (this.dragging) {
             const {innerWidth: w, innerHeight: h} = window;
@@ -44,8 +49,13 @@ export class Ball implements Drawable {
             );
         }
         this.dragging = false;
+        sendPacket(Ball.ws, {
+            type: "putt",
+            vec: this.velocity.arr()
+        })
     }
 
+    // Clientside method
     draw(canvas: Canvas) {
         if (this.dragging) {
             const target = this.position.mul(2).$sub(canvas.screenToWorld(this.mouse));
@@ -53,11 +63,11 @@ export class Ball implements Drawable {
             canvas.path(target);
             canvas.stroke(5, "red");
         }
-        canvas.circle(this.position, this.radius, this.isPlayer ? "blue": "white");
+        canvas.circle(this.position, this.radius, this.client ? "blue": "white");
     }
 
     private collideWithBalls(newPos: Vec) {
-        for (const ball of Ball.ALL) {
+        for (const ball of Object.values(Ball.ALL)) {
             const diff = ball.position.sub(this.position);
             const ballRadii = this.radius + ball.radius;
             if (ball !== this && diff.lenSq() < ballRadii ** 2) {
@@ -131,7 +141,7 @@ export class Ball implements Drawable {
             }
         }
 
-        if (this.isPlayer) {
+        if (this.client) {
             canvas.camera = this.position;
         }
     }
