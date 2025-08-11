@@ -16,19 +16,55 @@ export const config = {
     },
     geo: [] as Vec[],
     slopes: [
-        [0, 800, 250, 100]
-    ] as [number, number, number, number][]
+        // x, y, w, h, axis (0 up, 1 right, etc)
+        [-50, 300, 250, 200, 2]
+    ] as [number, number, number, number, number][]
 }
 config.geoRaw = [
-    [0, 0],
-    [250, -250],
-    [500, -250],
-    [750, 0],
-    [750, 250],
-    [500, 500],
-    [250, 500],
-    [0, 250],
-    [0, 0],
+    [
+        0,
+        0
+    ],
+    [
+        1100,
+        0
+    ],
+    [
+        1100,
+        1000
+    ],
+    [
+        -50,
+        1000
+    ],
+    [
+        -50,
+        300
+    ],
+    [
+        200,
+        300
+    ],
+    [
+        200,
+        850
+    ],
+    [
+        900,
+        850
+    ],
+    [
+        900,
+        200
+    ],
+    [
+        0,
+        200
+    ],
+    [
+        0,
+        0
+    ]
 ]
 
 const server = Bun.serve({
@@ -43,7 +79,7 @@ const server = Bun.serve({
     websocket: {
         open(ws: ServerWebSocket<string>) {
             if (!(ws.data in Ball.ALL)) {
-                new Ball(ws.data, new Vec(50 * (activePlayers.size + 1), 50));
+                new Ball(ws.data, new Vec(50 * (activePlayers.size + 1), 100));
             }
             sendPacket(ws, {
                 type: "join",

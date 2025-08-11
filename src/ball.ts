@@ -1,6 +1,7 @@
 import type {Canvas, Drawable} from "./lib.ts";
 import {Vec} from "./common/vec.ts";
 import {sendPacket} from "./common/packets.ts";
+import {global} from "./main.ts";
 
 export class Ball implements Drawable {
     public position: Vec;
@@ -11,7 +12,6 @@ export class Ball implements Drawable {
 
     private dragging = false;
     private mouse = new Vec(0, 0);
-    public static ws: WebSocket;
 
     constructor(public id: string, public isPlayer = false, position?: Vec) {
         this.position = position || new Vec(-100, -100);
@@ -40,7 +40,7 @@ export class Ball implements Drawable {
             const {innerWidth: w, innerHeight: h} = window;
             const largeAxisSize = w > h ? w : h;
             const {x, y} = ev;
-            sendPacket(Ball.ws, {
+            sendPacket(global.ws, {
                 type: "putt",
                 vec: [
                     -1 * ((x - w / 2) / largeAxisSize),
@@ -58,7 +58,7 @@ export class Ball implements Drawable {
             canvas.path(target);
             canvas.stroke(5, "red");
         }
-        if (this.isPlayer) {
+        if (this.isPlayer && !global.levelEditing) {
             canvas.camera = this.position;
         }
         canvas.circle(this.position, this.radius, this.isPlayer ? "blue": "white");

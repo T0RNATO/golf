@@ -10,7 +10,7 @@ interface JoinPacket {
     type: "join",
     token: string,
     geo: vec[],
-    slopes: [number, number, number, number][],
+    slopes: [number, number, number, number, number][],
     pos: vec,
 }
 

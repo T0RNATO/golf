@@ -85,6 +85,7 @@ export class Canvas {
     private updateCanvas() {
         this.canvas.width  = window.innerWidth  * this.dpi;
         this.canvas.height = window.innerHeight * this.dpi;
+        this.dpi = window.devicePixelRatio;
     }
 
     private draw() {
