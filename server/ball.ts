@@ -1,69 +1,16 @@
-import type {Canvas, Drawable} from "../lib.ts";
-import {Vec} from "./vec.ts";
-import {GAME} from "./config.ts";
-import {sendPacket} from "./packets.ts";
+import {Vec} from "@common/vec.ts";
+import {config} from "./main.ts";
 
-export class Ball implements Drawable {
+export class Ball {
     public position: Vec;
     public velocity = new Vec(0, 0);
     public radius = 20;
 
     public static ALL: Record<string, Ball> = {};
 
-    // Client props
-    private dragging = false;
-    private mouse = new Vec(0, 0);
-    public static ws: WebSocket;
-
-    constructor(public id: string, public client = false, position?: Vec) {
+    constructor(public id: string, position?: Vec) {
         this.position = position || new Vec(50, 100);
         Ball.ALL[id] = this;
-
-        // maybe remove these listeners on destruction?
-        if (this.client) {
-            const main = document.getElementById("main")!;
-            document.getElementById("hover")!.addEventListener("mousedown", () => {
-                this.dragging = true;
-            });
-
-            main.addEventListener("mousemove", ev => {
-                this.mouse.$set(ev.x, ev.y);
-            })
-
-            main.addEventListener("mouseup", this.putt.bind(this));
-            main.addEventListener("pointerleave", () => {
-                this.dragging = false;
-            });
-        }
-    }
-
-    // Clientside method
-    putt(ev: MouseEvent) {
-        if (this.dragging) {
-            const {innerWidth: w, innerHeight: h} = window;
-            const largeAxisSize = w > h ? w : h;
-            const {x, y} = ev;
-            this.velocity.$set(
-                -GAME.puttPower * ((x - w / 2) / largeAxisSize),
-                -GAME.puttPower * ((y - h / 2) / largeAxisSize),
-            );
-        }
-        this.dragging = false;
-        sendPacket(Ball.ws, {
-            type: "putt",
-            vec: this.velocity.arr()
-        })
-    }
-
-    // Clientside method
-    draw(canvas: Canvas) {
-        if (this.dragging) {
-            const target = this.position.mul(2).$sub(canvas.screenToWorld(this.mouse));
-            canvas.startPath(this.position);
-            canvas.path(target);
-            canvas.stroke(5, "red");
-        }
-        canvas.circle(this.position, this.radius, this.client ? "blue": "white");
     }
 
     private collideWithBalls(newPos: Vec) {
@@ -84,9 +31,9 @@ export class Ball implements Drawable {
     private collideWithWalls(newPos: Vec) {
         const oldP = this.position.arr();
         const newP = newPos.arr();
-        walls: for (let i = 0; i < GAME.levelGeo.length - 1; i++) {
-            const p1 = GAME.levelGeo[i].arr();
-            const p2 = GAME.levelGeo[i+1].arr();
+        walls: for (let i = 0; i < config.geo.length - 1; i++) {
+            const p1 = config.geo[i].arr();
+            const p2 = config.geo[i+1].arr();
 
             // 0: x, 1: y
             for (const axis of [0, 1]) {
@@ -103,7 +50,6 @@ export class Ball implements Drawable {
                             this.velocity.y *= -1;
                         newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]);
                         newPos = new Vec(...newP);
-                        console.debug(`Ball collided with ${axis === 0 ? 'vertical' : 'horizontal'} wall.`)
                     }
                     continue walls;
                 }
@@ -113,36 +59,45 @@ export class Ball implements Drawable {
 
             // Is the ball in the wall's bounding box?
             if (isBetween(newP[0], p1[0], p2[0]) && isBetween(newP[1], p1[1], p2[1])) {
-                const ball2Wall = this.position.sub(GAME.levelGeo[i]);
-                const newBall2Wall = newPos.sub(GAME.levelGeo[i]);
+                const ball2Wall = this.position.sub(config.geo[i]);
+                const newBall2Wall = newPos.sub(config.geo[i]);
                 // Has the ball started and ended on different sides of the wall?
                 if ((Math.abs(ball2Wall.x) > Math.abs(ball2Wall.y)) !== (Math.abs(newBall2Wall.x) > Math.abs(newBall2Wall.y))) {
                     const {x, y} = this.velocity;
-                    this.velocity.x = -1 * y;
-                    this.velocity.y = -1 * x;
+                    if (Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1])) {
+                        // noinspection JSSuspiciousNameCombination
+                        this.velocity.$set(y, x);
+                    } else {
+                        this.velocity.$set(-y, -x);
+                    }
                     newPos = this.position; // not ideal since the ball will visually bounce against nothing.
-                    console.debug(`Ball collided with diagonal wall.`)
                 }
             }
         }
         return newPos;
     }
 
-    tick(canvas: Canvas) {
+    tick() {
+        for (const slope of config.slopes) {
+            if (
+                slope[0] < this.position.x &&
+                slope[1] < this.position.y &&
+                this.position.x < slope[0] + slope[2] &&
+                this.position.y < slope[1] + slope[3]
+            ) {
+                this.velocity.$add({x: 0, y: -0.08});
+            }
+        }
         if (this.velocity.lenSq() > 0) {
             let newPos = this.position.add(this.velocity);
             newPos = this.collideWithBalls(newPos);
             newPos = this.collideWithWalls(newPos);
             this.position = newPos;
 
-            this.velocity.$mul(GAME.friction);
+            this.velocity.$mul(config.friction);
             if (this.velocity.lenSq() < 0.001) {
                 this.velocity.$set(0, 0);
             }
-        }
-
-        if (this.client) {
-            canvas.camera = this.position;
         }
     }
 }

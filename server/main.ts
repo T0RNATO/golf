@@ -1,7 +1,35 @@
 import {randomUUIDv7, type ServerWebSocket} from "bun";
-import {Ball} from "@common/ball.ts";
-import {GAME} from "@common/config.ts";
+import {Ball} from "./ball.ts";
 import {type C2S, handlePacket, type S2C, sendPacket} from "@common/packets.ts";
+import {Vec} from "@common/vec.ts";
+
+export const config = {
+    friction: 1 - 0.01,
+    puttPower: 40,
+    __geoRaw: [] as [number, number][],
+    set geoRaw(v: [number, number][]) {
+        this.__geoRaw = v;
+        this.geo = v.map(el => new Vec(...el));
+    },
+    get geoRaw() {
+        return this.__geoRaw
+    },
+    geo: [] as Vec[],
+    slopes: [
+        [0, 800, 250, 100]
+    ] as [number, number, number, number][]
+}
+config.geoRaw = [
+    [0, 0],
+    [250, -250],
+    [500, -250],
+    [750, 0],
+    [750, 250],
+    [500, 500],
+    [250, 500],
+    [0, 250],
+    [0, 0],
+]
 
 const server = Bun.serve({
     fetch(req, server) {
@@ -14,15 +42,18 @@ const server = Bun.serve({
     },
     websocket: {
         open(ws: ServerWebSocket<string>) {
+            if (!(ws.data in Ball.ALL)) {
+                new Ball(ws.data, new Vec(50 * (activePlayers.size + 1), 50));
+            }
             sendPacket(ws, {
-                type: "token",
-                token: ws.data
+                type: "join",
+                token: ws.data,
+                geo: config.geoRaw,
+                slopes: config.slopes,
+                pos: Ball.ALL[ws.data].position.arr(),
             })
             activePlayers.add(ws.data);
             ws.subscribe("game");
-            if (!(ws.data in Ball.ALL)) {
-                new Ball(ws.data);
-            }
         },
 
         close(ws: ServerWebSocket<string>) {
@@ -33,8 +64,7 @@ const server = Bun.serve({
             handlePacket<C2S>(message, {
                 putt(packet) {
                     const ball = Ball.ALL[ws.data];
-                    ball.velocity.$set(...packet.vec);
-                    // ball.position.$add(ball.velocity.mul(20));
+                    ball.velocity.$add(new Vec(...packet.vec).$mul(config.puttPower));
                 }
             })
         }
@@ -51,9 +81,9 @@ let tick = 0;
 setInterval(() => {
     tick++;
     for (const ball of Object.values(Ball.ALL)) {
-        ball.tick(null!);
+        ball.tick();
     }
-    if (tick > 20) {
+    if (tick >= 5) {
         publish({
             type: "tick",
             balls: Object.fromEntries(Object.entries(Ball.ALL).map(([id, ball]) => [id, {
@@ -63,4 +93,4 @@ setInterval(() => {
         })
         tick = 0;
     }
-}, GAME.tickInterval);
+}, 10);

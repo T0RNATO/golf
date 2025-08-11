@@ -56,4 +56,12 @@ export class Vec {
         this.y /= len;
         return this;
     }
+
+    greaterThan(v: _Vec) {
+        return this.x > v.x && this.y > v.y;
+    }
+
+    [globalThis?.Bun?.inspect?.custom || 'toString']() {
+        return `(${this.x} ${this.y})`;
+    }
 }

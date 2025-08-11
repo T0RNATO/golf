@@ -1,5 +1,4 @@
 import {Vec} from "./common/vec.ts";
-import {GAME} from "./common/config.ts";
 
 export interface Drawable {
     draw(canvas: Canvas): void;
@@ -30,13 +29,19 @@ export class Canvas {
         this.ctx.lineTo(...this.worldToScreen(pos));
     }
 
-    public stroke(width: number, color: string) {
+    public stroke(width: number, color: string | CanvasGradient) {
         this.ctx.lineWidth = width * this.dpi;
         this.ctx.strokeStyle = color;
         this.ctx.stroke();
     }
 
-    public fill(color: string) {
+    public fillPath(pos: Vec, path: string, color: string | CanvasGradient) {
+        this.ctx.fillStyle = color;
+        const _pos = this.worldToScreen(pos);
+        this.ctx.fill(new Path2D(`m${_pos[0]} ${_pos[1]}` + path));
+    }
+
+    public fill(color: string | CanvasGradient) {
         this.ctx.fillStyle = color;
         this.ctx.fill();
     }
@@ -50,6 +55,21 @@ export class Canvas {
 
     public addElement(el: Drawable) {
         this.elements.push(el);
+    }
+
+    public gradient(from: Vec, to: Vec, stops: Record<number, string>): CanvasGradient {
+        const gradient = this.ctx.createLinearGradient(
+            ...this.worldToScreen(from),
+            ...this.worldToScreen(to)
+        )
+        // const frac = 1 / (stops.length - 1);
+        // for (let i = 0; i < stops.length; i++) {
+        //     gradient.addColorStop(i * frac, stops[i]);
+        // }
+        for (const [stop, colour] of Object.entries(stops)) {
+            gradient.addColorStop(Number(stop), colour);
+        }
+        return gradient;
     }
 
     private worldToScreen(p: Vec): [number, number] {
@@ -85,7 +105,7 @@ export class Canvas {
     constructor() {
         this.updateCanvas()
         window.addEventListener("resize", this.updateCanvas.bind(this));
-        window.setInterval(this.tick.bind(this), GAME.tickInterval);
+        window.setInterval(this.tick.bind(this), 10);
         this.draw();
     }
 }

@@ -1,14 +1,17 @@
 import type {ServerWebSocket} from "bun";
 
-export type S2C = TokenPacket | TickPacket;
+export type S2C = JoinPacket | TickPacket;
 export type C2S = PuttPacket;
 type Packet = S2C | C2S;
 
 type vec = [number, number];
 
-interface TokenPacket {
-    type: "token",
+interface JoinPacket {
+    type: "join",
     token: string,
+    geo: vec[],
+    slopes: [number, number, number, number][],
+    pos: vec,
 }
 
 interface TickPacket {
@@ -30,9 +33,9 @@ export function handlePacket<P extends S2C | C2S>(
         [K in P['type']]: (packet: Extract<P, { type: K }>) => void;
     }) {
     const packet = parsePacket<P>(packetStr);
-    if (!packet) return;
-    if (packet.type in handlers) {
-        // @ts-ignore
+
+    if (packet && packet.type in handlers) {
+        // @ts-expect-error
         handlers[packet.type](packet);
     }
 }
