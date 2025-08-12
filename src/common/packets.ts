@@ -12,6 +12,7 @@ interface JoinPacket {
     geo: vec[],
     slopes: [number, number, number, number, number][],
     pos: vec,
+    boosters: [number, number, number][]
 }
 
 interface TickPacket {

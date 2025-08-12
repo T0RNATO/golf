@@ -59,6 +59,7 @@ export class Vec {
 
     // Rotates the vector anticlockwise in increments of 90°
     $rot(amount: number) {
+        amount = amount % 4;
         switch (amount) {
             case 1: [this.y, this.x] = [this.x, this.y]; break;
             case 2: this.x *= -1; this.y *= -1; break;
@@ -67,6 +68,7 @@ export class Vec {
         return this;
     }
 
+    // @ts-expect-error
     [globalThis?.Bun?.inspect?.custom || 'toString']() {
         return `(${this.x} ${this.y})`;
     }

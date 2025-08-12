@@ -88,6 +88,16 @@ export class Ball {
                 this.velocity.$add(new Vec(0, -0.08).$rot(slope[4]));
             }
         }
+        for (const slope of config.boosters) {
+            if (
+                slope[0] - 20 < this.position.x &&
+                slope[1] - 20 < this.position.y &&
+                this.position.x < slope[0] + 20 &&
+                this.position.y < slope[1] + 20
+            ) {
+                this.velocity = new Vec(0, 20).$rot(slope[2] + 2);
+            }
+        }
         if (this.velocity.lenSq() > 0) {
             let newPos = this.position.add(this.velocity);
             newPos = this.collideWithBalls(newPos);

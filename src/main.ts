@@ -18,7 +18,7 @@ canvas.addElement(el(c => {
             c.path(levelGeo[i]);
         }
         c.path(levelGeo[1]);
-        c.stroke(50, "#bd77b3");
+        c.stroke(60, "#bd77b3");
         c.stroke(30, "#f2a7e8");
         c.fill("#f2a7e8");
         if (global.levelEditing) {
@@ -32,22 +32,37 @@ canvas.addElement(el(c => {
             const p4 = slope.pos.add({x: 0, y: slope.dimensions.y});
             c.path(p2); c.path(p3); c.path(p4);
 
-            const gradientStops = {
-                0: "#f2a7e8", 0.1: "#c991c3", 0.9: "#c991c3", 1: "#f2a7e8"
-            };
+            const colour = "rgb(255 0 80 / 0.1)";
 
-            const gradient = slope.angle % 2 === 0 ?
-                c.gradient(p2, p3, gradientStops):
-                c.gradient(p3, p4, gradientStops);
-
-            c.fill(gradient);
+            c.fill(colour);
             c.path(slope.pos);
             c.path(slope.pos.add({x: slope.dimensions.x, y: 0}));
-            c.stroke(30, gradient);
+            c.stroke(30, colour);
 
             c.transformCtx(slope.pos.add(slope.dimensions.mul(0.5)));
             c.ctx.rotate(-slope.angle * Math.PI / 2);
-            c.ctx.fillStyle = "red";
+            c.ctx.fillStyle = "rgb(255 0 80 / 0.3)";
+            c.ctx.fill(new Path2D(arrow));
+            c.resetTransformation();
+        }
+
+        for (const booster of levelBoosters) {
+            c.startPath(booster.pos.sub({x: -20, y: -20}));
+            c.path(booster.pos.sub({x: 20, y: -20}));
+            c.path(booster.pos.sub({x: 20, y: 20}));
+            c.path(booster.pos.sub({x: -20, y: 20}));
+            c.path(booster.pos.sub({x: -20, y: -20}));
+            c.path(booster.pos.sub({x: 20, y: -20}));
+
+            const colour = "rgb(0 200 0 / 0.3)";
+
+            c.fill(colour);
+            c.stroke(30, colour);
+
+            c.transformCtx(booster.pos);
+            c.ctx.scale(0.5, 0.5);
+            c.ctx.rotate(-booster.angle * Math.PI / 2);
+            c.ctx.fillStyle = "rgb(100 255 100 / 0.7)";
             c.ctx.fill(new Path2D(arrow));
             c.resetTransformation();
         }
@@ -75,6 +90,10 @@ let levelSlopes: {
     dimensions: Vec,
     angle: number,
 }[] = [];
+let levelBoosters: {
+    pos: Vec,
+    angle: number
+}[] = [];
 
 export const global = {
     levelEditing: false,
@@ -91,6 +110,12 @@ global.ws.onmessage = (ev) => {
                     pos: new Vec(slope[0], slope[1]),
                     dimensions: new Vec(slope[2], slope[3]),
                     angle: slope[4],
+                }
+            })
+            levelBoosters = packet.boosters.map(booster => {
+                return {
+                    pos: new Vec(booster[0], booster[1]),
+                    angle: booster[2],
                 }
             })
             document.cookie = `token=${token}`

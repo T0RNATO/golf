@@ -16,12 +16,19 @@ export const config = {
     },
     geo: [] as Vec[],
     slopes: [
-        // x, y, w, h, axis (0 up, 1 right, etc)
-        [0, 0, 200, 200, 0],
-        [0, -400, 200, 200, 1],
-        [-400, -400, 200, 200, 2],
-        [-400, 0, 200, 200, 3],
-    ] as [number, number, number, number, number][]
+        // x, y, w, h, angle (0 up, 1 right, etc)
+        // [0, 0, 200, 200, 0],
+        // [0, -400, 200, 200, 1],
+        // [-400, -400, 200, 200, 2],
+        // [-400, 0, 200, 200, 3],
+    ] as [number, number, number, number, number][],
+    boosters: [
+        // x, y, angle
+        [-300, -300, 2],
+        [100, -300, 1],
+        [-300, 100, 3],
+        [100, 100, 0],
+    ] as [number, number, number][]
 }
 config.geoRaw = [
     [
@@ -66,6 +73,7 @@ const server = Bun.serve({
                 geo: config.geoRaw,
                 slopes: config.slopes,
                 pos: Ball.ALL[ws.data].position.arr(),
+                boosters: config.boosters
             })
             activePlayers.add(ws.data);
             ws.subscribe("game");
