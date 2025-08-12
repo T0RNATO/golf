@@ -85,7 +85,7 @@ export class Ball {
                 this.position.x < slope[0] + slope[2] &&
                 this.position.y < slope[1] + slope[3]
             ) {
-                this.velocity.$add({x: 0, y: -0.08});
+                this.velocity.$add(new Vec(0, -0.08).$rot(slope[4]));
             }
         }
         if (this.velocity.lenSq() > 0) {

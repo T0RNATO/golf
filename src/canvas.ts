@@ -35,6 +35,18 @@ export class Canvas {
         this.ctx.stroke();
     }
 
+    public transformCtx(origin: Vec) {
+        this.ctx.scale(this.dpi, this.dpi);
+        this.ctx.translate(
+            -this.camera.x + window.innerWidth / 2 + origin.x,
+            -this.camera.y + window.innerHeight / 2 + origin.y
+        );
+    }
+
+    public resetTransformation() {
+        this.ctx.resetTransform();
+    }
+
     public fillPath(pos: Vec, path: string, color: string | CanvasGradient) {
         this.ctx.fillStyle = color;
         const _pos = this.worldToScreen(pos);
@@ -103,10 +115,20 @@ export class Canvas {
         }
     }
 
+    private detectZoomChange() {
+        matchMedia(
+            `(resolution: ${window.devicePixelRatio}dppx)`
+        ).addEventListener("change", () => {
+            this.updateCanvas();
+            this.detectZoomChange();
+        }, { once: true });
+    }
+
     constructor() {
         this.updateCanvas()
         window.addEventListener("resize", this.updateCanvas.bind(this));
         window.setInterval(this.tick.bind(this), 10);
+        this.detectZoomChange();
         this.draw();
     }
 }

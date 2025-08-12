@@ -57,8 +57,14 @@ export class Vec {
         return this;
     }
 
-    greaterThan(v: _Vec) {
-        return this.x > v.x && this.y > v.y;
+    // Rotates the vector anticlockwise in increments of 90°
+    $rot(amount: number) {
+        switch (amount) {
+            case 1: [this.y, this.x] = [this.x, this.y]; break;
+            case 2: this.x *= -1; this.y *= -1; break;
+            case 3: [this.y, this.x] = [-this.x, -this.y]; break;
+        }
+        return this;
     }
 
     [globalThis?.Bun?.inspect?.custom || 'toString']() {

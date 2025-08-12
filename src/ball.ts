@@ -1,4 +1,4 @@
-import type {Canvas, Drawable} from "./lib.ts";
+import type {Canvas, Drawable} from "./canvas.ts";
 import {Vec} from "./common/vec.ts";
 import {sendPacket} from "./common/packets.ts";
 import {global} from "./main.ts";

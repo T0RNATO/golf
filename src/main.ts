@@ -1,5 +1,5 @@
 import './style.css'
-import {Canvas, type Drawable} from "./lib.ts";
+import {Canvas, type Drawable} from "./canvas.ts";
 import {Ball} from "./ball.ts";
 import {handlePacket, type S2C} from "./common/packets.ts";
 import {Vec} from "./common/vec.ts";
@@ -9,7 +9,7 @@ function el(draw: Drawable['draw']): Drawable {
 }
 
 const canvas = new Canvas();
-const arrow = "l-26 30 l20-5 l-10 60 l30 0l-10-60 20 5z";
+const arrow = "m0 -42l-26 30 l20-5 l-10 60 l30 0l-10-60 20 5z";
 
 canvas.addElement(el(c => {
     if (levelGeo.length > 1) {
@@ -32,21 +32,24 @@ canvas.addElement(el(c => {
             const p4 = slope.pos.add({x: 0, y: slope.dimensions.y});
             c.path(p2); c.path(p3); c.path(p4);
 
-            const gradient = c.gradient(p2, p3, {
+            const gradientStops = {
                 0: "#f2a7e8", 0.1: "#c991c3", 0.9: "#c991c3", 1: "#f2a7e8"
-            });
+            };
+
+            const gradient = slope.angle % 2 === 0 ?
+                c.gradient(p2, p3, gradientStops):
+                c.gradient(p3, p4, gradientStops);
+
             c.fill(gradient);
             c.path(slope.pos);
             c.path(slope.pos.add({x: slope.dimensions.x, y: 0}));
             c.stroke(30, gradient);
 
-            c.ctx.scale(c.dpi, c.dpi);
-            c.ctx.translate(-c.camera.x + window.innerWidth, -c.camera.y + window.innerHeight);
-            c.ctx.rotate(Math.PI);
-            // c.fillPath(slope.pos.add({x: slope.dimensions.x / 2, y: (slope.dimensions.y - 85) / 2}), arrow, "#
+            c.transformCtx(slope.pos.add(slope.dimensions.mul(0.5)));
+            c.ctx.rotate(-slope.angle * Math.PI / 2);
             c.ctx.fillStyle = "red";
-            c.ctx.fill(new Path2D(`m-1000 -500` + arrow));
-            c.ctx.resetTransform();
+            c.ctx.fill(new Path2D(arrow));
+            c.resetTransformation();
         }
     }
 
@@ -70,6 +73,7 @@ let levelGeo: Vec[] = [];
 let levelSlopes: {
     pos: Vec,
     dimensions: Vec,
+    angle: number,
 }[] = [];
 
 export const global = {
@@ -86,6 +90,7 @@ global.ws.onmessage = (ev) => {
                 return {
                     pos: new Vec(slope[0], slope[1]),
                     dimensions: new Vec(slope[2], slope[3]),
+                    angle: slope[4],
                 }
             })
             document.cookie = `token=${token}`
@@ -144,8 +149,11 @@ canvas.addElement(el(c => {
             for (let j = -25; j < 25; j++) {
                 const x = i * 50;
                 const y = j * 50;
-                const origin = (i === 0 && j === 0) || x === prev?.x || y === prev?.y || (Math.abs(x - prev?.x) == Math.abs(y - prev?.y))
-                c.circle(new Vec(x, y), origin ? 10: 3, origin ? "purple" : "gray");
+                const highlight = x === prev?.x || y === prev?.y || (Math.abs(x - prev?.x!) == Math.abs(y - prev?.y!));
+                if (i==0 && j==0) {
+                    c.circle(new Vec(x, y), 6, "pink");
+                }
+                c.circle(new Vec(x, y), highlight ? 6: 3, highlight ? "purple": "pink");
             }
         }
     }
