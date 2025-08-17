@@ -4,15 +4,18 @@ export type S2C = JoinPacket | TickPacket;
 export type C2S = PuttPacket;
 type Packet = S2C | C2S;
 
-type vec = [number, number];
+type vec  = [number, number];
+type vec3 = [number, number, number];
+type vec4 = [number, number, number, number];
+type vec5 = [number, number, number, number, number];
 
-interface JoinPacket {
+export interface JoinPacket {
     type: "join",
     token: string,
-    geo: vec[],
-    slopes: [number, number, number, number, number][],
+    geo: vec4[],
+    slopes: vec5[],
     pos: vec,
-    boosters: [number, number, number][]
+    boosters: vec3[]
 }
 
 interface TickPacket {

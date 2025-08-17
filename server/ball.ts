@@ -31,9 +31,9 @@ export class Ball {
     private collideWithWalls(newPos: Vec) {
         const oldP = this.position.arr();
         const newP = newPos.arr();
-        walls: for (let i = 0; i < config.geo.length - 1; i++) {
-            const p1 = config.geo[i].arr();
-            const p2 = config.geo[i+1].arr();
+        walls: for (const wall of config.geo) {
+            const p1 = wall.start.arr();
+            const p2 = wall.end.arr();
 
             // 0: x, 1: y
             for (const axis of [0, 1]) {
@@ -59,8 +59,8 @@ export class Ball {
 
             // Is the ball in the wall's bounding box?
             if (isBetween(newP[0], p1[0], p2[0]) && isBetween(newP[1], p1[1], p2[1])) {
-                const ball2Wall = this.position.sub(config.geo[i]);
-                const newBall2Wall = newPos.sub(config.geo[i]);
+                const ball2Wall = this.position.sub(wall.start);
+                const newBall2Wall = newPos.sub(wall.start);
                 // Has the ball started and ended on different sides of the wall?
                 if ((Math.abs(ball2Wall.x) > Math.abs(ball2Wall.y)) !== (Math.abs(newBall2Wall.x) > Math.abs(newBall2Wall.y))) {
                     const {x, y} = this.velocity;

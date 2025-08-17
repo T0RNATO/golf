@@ -68,7 +68,17 @@ export class Vec {
         return this;
     }
 
-    // @ts-expect-error
+    equals(other: Vec) {
+        return this.x === other.x && this.y === other.y;
+    }
+
+    $snap(grid: number) {
+        this.x = grid * Math.round(this.x / grid);
+        this.y = grid * Math.round(this.y / grid);
+        return this;
+    }
+
+    // @ts-ignore
     [globalThis?.Bun?.inspect?.custom || 'toString']() {
         return `(${this.x} ${this.y})`;
     }

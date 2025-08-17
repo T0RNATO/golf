@@ -3,18 +3,23 @@ import {Ball} from "./ball.ts";
 import {type C2S, handlePacket, type S2C, sendPacket} from "@common/packets.ts";
 import {Vec} from "@common/vec.ts";
 
+type vec4 = [number, number, number, number];
+
 export const config = {
     friction: 1 - 0.01,
     puttPower: 40,
-    __geoRaw: [] as [number, number][],
-    set geoRaw(v: [number, number][]) {
+    __geoRaw: [] as vec4[],
+    set geoRaw(v: vec4[]) {
         this.__geoRaw = v;
-        this.geo = v.map(el => new Vec(...el));
+        this.geo = v.map(el => {return {
+            start: new Vec(el[0], el[1]),
+            end: new Vec(el[2], el[3]),
+        }});
     },
     get geoRaw() {
         return this.__geoRaw
     },
-    geo: [] as Vec[],
+    geo: [] as {start: Vec, end: Vec}[],
     slopes: [
         // x, y, w, h, angle (0 up, 1 right, etc)
         // [0, 0, 200, 200, 0],
@@ -24,32 +29,60 @@ export const config = {
     ] as [number, number, number, number, number][],
     boosters: [
         // x, y, angle
-        [-300, -300, 2],
-        [100, -300, 1],
-        [-300, 100, 3],
-        [100, 100, 0],
+        // [-300, -300, 2],
+        // [100, -300, 1],
+        // [-300, 100, 3],
+        // [100, 100, 0],
     ] as [number, number, number][]
 }
 config.geoRaw = [
     [
-        -400,
-        -400
+        0,
+        0,
+        1350,
+        0
     ],
     [
-        -400,
+        1350,
+        0,
+        1350,
+        800
+    ],
+    [
+        1350,
+        800,
+        0,
+        800
+    ],
+    [
+        0,
+        800,
+        0,
+        0
+    ],
+    [
+        350,
+        200,
+        1050,
         200
     ],
     [
+        1050,
         200,
+        1050,
+        550
+    ],
+    [
+        1050,
+        550,
+        350,
+        550
+    ],
+    [
+        350,
+        550,
+        350,
         200
-    ],
-    [
-        200,
-        -400
-    ],
-    [
-        -400,
-        -400
     ]
 ]
 

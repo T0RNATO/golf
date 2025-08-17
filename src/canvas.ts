@@ -73,11 +73,7 @@ export class Canvas {
         const gradient = this.ctx.createLinearGradient(
             ...this.worldToScreen(from),
             ...this.worldToScreen(to)
-        )
-        // const frac = 1 / (stops.length - 1);
-        // for (let i = 0; i < stops.length; i++) {
-        //     gradient.addColorStop(i * frac, stops[i]);
-        // }
+        );
         for (const [stop, colour] of Object.entries(stops)) {
             gradient.addColorStop(Number(stop), colour);
         }
