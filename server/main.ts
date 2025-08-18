@@ -34,28 +34,37 @@ config.hole = new Vec(...levels[0].hole);
 const server = Bun.serve({
     fetch(req, server) {
         const query = req.url.split("?")?.[1];
-        const token = query ? query.split("token=")?.[1] : undefined;
+        const token: string | undefined = query?.split("token=")?.[1];
 
-        // upgrade the request to a WebSocket
-        if (server.upgrade(req, {data: token || randomUUIDv7('base64')})) return;
+        if (players.has(token) || !token) {
+            // upgrade the request to a WebSocket
+            if (server.upgrade(req, {data: token || randomUUIDv7('base64url')})) {
+                if (token) {
+                    const player = players.get(token)!;
+                    publish({
+                        type: "newplayer",
+                        colour: player.colour,
+                        name: player.name,
+                        id: token,
+                        pos: Ball.ALL[token].position.arr()
+                    })
+                }
+                return;
+            }
+        }
         return new Response("Upgrade failed", { status: 500 });
     },
     websocket: {
         open(ws: ServerWebSocket<string>) {
-            if (!(ws.data in Ball.ALL)) {
-                new Ball(ws.data, new Vec(50 * (activePlayers.size + 2), 100));
-            }
             sendPacket(ws, {
                 type: "join",
                 token: ws.data,
                 geo: config.geoRaw,
                 slopes: config.slopes,
-                pos: Ball.ALL[ws.data].position.arr(),
                 boosters: config.boosters,
-                hole: config.hole.arr()
+                hole: config.hole.arr(),
+                players: Array.from(players.entries()).map(([id, p]) => {return {colour: p.colour, name: p.name, id}}),
             })
-            activePlayers.add(ws.data);
-            playerSockets.set(ws.data, ws);
             ws.subscribe("game");
         },
 
@@ -68,7 +77,27 @@ const server = Bun.serve({
                 putt(packet) {
                     const ball = Ball.ALL[ws.data];
                     ball.velocity.$add(new Vec(...packet.vec).$mul(config.puttPower));
-                }
+                },
+
+                playerinfo(packet) {
+                    if (!(ws.data in Ball.ALL)) {
+                        new Ball(ws.data, new Vec(50 * (activePlayers.size + 2), 100));
+                    }
+                    activePlayers.add(ws.data);
+                    players.set(ws.data, {
+                        ws,
+                        name: packet.name,
+                        colour: packet.colour
+                    });
+
+                    publish({
+                        type: "newplayer",
+                        colour: packet.colour,
+                        name: packet.name,
+                        id: ws.data,
+                        pos: Ball.ALL[ws.data].position.arr()
+                    })
+                },
             })
         }
     },
@@ -78,8 +107,14 @@ function publish(packet: S2C) {
     server.publish("game", JSON.stringify(packet));
 }
 
+interface Player {
+    ws: ServerWebSocket<string>,
+    colour: string,
+    name: string,
+}
+
 const activePlayers: Set<string> = new Set();
-export const playerSockets: Map<string, ServerWebSocket<string>> = new Map();
+export const players: Map<string, Player> = new Map();
 let tick = 0;
 
 setInterval(() => {
@@ -98,3 +133,11 @@ setInterval(() => {
         tick = 0;
     }
 }, 10);
+
+for await (const line of console) {
+    if (line === "start") {
+
+    } else {
+        process.stdout.write("Unknown command.\n")
+    }
+}

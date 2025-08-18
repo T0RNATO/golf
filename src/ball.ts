@@ -13,7 +13,7 @@ export class Ball implements Drawable {
     private dragging = false;
     private mouse = new Vec(0, 0);
 
-    constructor(public id: string, public isPlayer = false, position?: Vec) {
+    constructor(public id: string, public colour: string, public isPlayer = false, position?: Vec) {
         this.position = position || new Vec(-100, -100);
         Ball.ALL[id] = this;
 
@@ -61,7 +61,7 @@ export class Ball implements Drawable {
         if (this.isPlayer && !global.levelEditing) {
             canvas.camera = this.position;
         }
-        canvas.circle(this.position, this.radius, this.isPlayer ? "blue": "white");
+        canvas.circle(this.position, this.radius, this.colour);
     }
 
     tick() {

@@ -1,5 +1,5 @@
 import {Vec} from "@common/vec.ts";
-import {config, playerSockets} from "./main.ts";
+import {config, players} from "./main.ts";
 import {sendPacket} from "@common/packets.ts";
 
 export class Ball {
@@ -112,7 +112,7 @@ export class Ball {
         }
 
         if (this.position.sub(config.hole).lenSq() < 400) {
-            sendPacket(playerSockets.get(this.id)!, {
+            sendPacket(players.get(this.id)!.ws, {
                 type: "sunk"
             })
         }

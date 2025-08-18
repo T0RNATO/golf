@@ -1,8 +1,8 @@
 import type {ServerWebSocket} from "bun";
 import type {Level} from "../../server/levels.ts";
 
-export type S2C = JoinPacket | TickPacket | BallSunkPacket;
-export type C2S = PuttPacket;
+export type S2C = JoinPacket | TickPacket | BallSunkPacket | NewPlayerPacket;
+export type C2S = PuttPacket | PlayerInfoPacket;
 type Packet = S2C | C2S;
 
 type vec  = [number, number];
@@ -10,11 +10,29 @@ type vec  = [number, number];
 export interface JoinPacket extends Level {
     type: "join",
     token: string,
+    players: {
+        colour: string,
+        name: string,
+        id: string
+    }[]
+}
+
+interface NewPlayerPacket {
+    type: "newplayer",
+    colour: string,
+    name: string,
+    id: string,
     pos: vec,
 }
 
 interface BallSunkPacket {
     type: "sunk",
+}
+
+interface PlayerInfoPacket {
+    type: "playerinfo",
+    name: string,
+    colour: string,
 }
 
 interface TickPacket {
@@ -30,7 +48,7 @@ interface PuttPacket {
     vec: vec,
 }
 
-export function handlePacket<P extends S2C | C2S>(
+export function handlePacket<P extends Packet>(
     packetStr: any,
     handlers: {
         [K in P['type']]: (packet: Extract<P, { type: K }>) => void;
@@ -43,7 +61,7 @@ export function handlePacket<P extends S2C | C2S>(
     }
 }
 
-function parsePacket<P extends S2C | C2S>(str: string): P | null {
+function parsePacket<P extends Packet>(str: string): P | null {
     try {
         return JSON.parse(str) as P;
     } catch {

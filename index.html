@@ -1,15 +1,43 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
-  </head>
-  <body>
-    <canvas id="canvas"></canvas>
-    <div id="main">
-      <div id="hover"></div>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="main">
+    <div id="hover"></div>
+    <div id="menu">
+        <!--"Gaegu" font-->
+        <img src="./title.webp" alt="Mini Golf Game">
+        <div>
+            Name:
+            <input type="text" id="name"/>
+        </div>
+        <div id="color">
+            Color:
+            <input type="radio" name="color" id="red" value="red">
+            <label for="red" style="background-color: red"></label>
+            <input type="radio" name="color" id="orange" value="orange">
+            <label for="orange" style="background-color: orange"></label>
+            <input type="radio" name="color" id="yellow" value="yellow">
+            <label for="yellow" style="background-color: yellow"></label>
+            <input type="radio" name="color" id="lime" value="lime">
+            <label for="lime" style="background-color: lime"></label>
+            <input type="radio" name="color" id="dodgerblue" value="dodgerblue">
+            <label for="dodgerblue" style="background-color: dodgerblue"></label>
+            <input type="radio" name="color" id="blue" value="blue">
+            <label for="blue" style="background-color: blue"></label>
+            <input type="radio" name="color" id="mediumpurple" value="mediumpurple">
+            <label for="mediumpurple" style="background-color: mediumpurple"></label>
+            <input type="radio" name="color" id="deeppink" value="deeppink">
+            <label for="deeppink" style="background-color: deeppink"></label>
+        </div>
+        <button id="start">Start!</button>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
 </html>
