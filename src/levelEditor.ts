@@ -23,6 +23,8 @@ export function register() {
 
         if (ev.ctrlKey) {
             global.level.geo = [];
+            global.level.slopes = [];
+            global.level.boosters = [];
             wallStart = null;
             return;
         }
@@ -46,7 +48,16 @@ export function register() {
             global.level.geo.push({start: wallStart, end: wallEnd});
             wallStart = null;
         } else if (selectedTool === 2) {
-            const slope = {pos: wallStart, dimensions: end.sub(wallStart), angle: 0};
+            const dimensions = end.sub(wallStart);
+            if (dimensions.x < 0) {
+                wallStart.x += dimensions.x;
+                dimensions.x *= -1;
+            } else if (dimensions.y < 0) {
+                wallStart.y += dimensions.y;
+                dimensions.y *= -1;
+            }
+            const slope = {pos: wallStart, dimensions: dimensions, angle: 0};
+
             mostRecentObject = slope;
             global.level.slopes.push(slope);
             wallStart = null;
@@ -54,6 +65,9 @@ export function register() {
             const booster = {pos: wallStart, angle: 0};
             mostRecentObject = booster;
             global.level.boosters.push(booster);
+            wallStart = null;
+        } else if (selectedTool === 4) {
+            global.level.hole = end;
             wallStart = null;
         }
 
@@ -81,7 +95,9 @@ export function register() {
         const number = parseInt(ev.key);
 
         if (ev.key === "z" && global.levelEditing) {
-            global.level.geo.pop();
+            if (selectedTool === 1) global.level.geo.pop();
+            else if (selectedTool === 2) global.level.slopes.pop();
+            else if (selectedTool === 3) global.level.boosters.pop();
         } else if (ev.key === "i") {
             global.levelEditing = !global.levelEditing;
         } else if (!Number.isNaN(number)) {

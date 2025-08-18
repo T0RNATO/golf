@@ -1,5 +1,6 @@
 import {Vec} from "@common/vec.ts";
-import {config} from "./main.ts";
+import {config, playerSockets} from "./main.ts";
+import {sendPacket} from "@common/packets.ts";
 
 export class Ball {
     public position: Vec;
@@ -88,14 +89,14 @@ export class Ball {
                 this.velocity.$add(new Vec(0, -0.08).$rot(slope[4]));
             }
         }
-        for (const slope of config.boosters) {
+        for (const booster of config.boosters) {
             if (
-                slope[0] - 20 < this.position.x &&
-                slope[1] - 20 < this.position.y &&
-                this.position.x < slope[0] + 20 &&
-                this.position.y < slope[1] + 20
+                booster[0] - 20 < this.position.x &&
+                booster[1] - 20 < this.position.y &&
+                this.position.x < booster[0] + 20 &&
+                this.position.y < booster[1] + 20
             ) {
-                this.velocity = new Vec(0, 20).$rot(slope[2] + 2);
+                this.velocity = new Vec(0, 20).$rot(booster[2] + 2);
             }
         }
         if (this.velocity.lenSq() > 0) {
@@ -108,6 +109,12 @@ export class Ball {
             if (this.velocity.lenSq() < 0.001) {
                 this.velocity.$set(0, 0);
             }
+        }
+
+        if (this.position.sub(config.hole).lenSq() < 400) {
+            sendPacket(playerSockets.get(this.id)!, {
+                type: "sunk"
+            })
         }
     }
 }

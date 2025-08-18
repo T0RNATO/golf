@@ -29,6 +29,10 @@ export class Canvas {
         this.ctx.lineTo(...this.worldToScreen(pos));
     }
 
+    public jump(pos: Vec) {
+        this.ctx.moveTo(...this.worldToScreen(pos));
+    }
+
     public stroke(width: number, color: string | CanvasGradient) {
         this.ctx.lineWidth = width * this.dpi;
         this.ctx.strokeStyle = color;
@@ -55,7 +59,7 @@ export class Canvas {
 
     public fill(color: string | CanvasGradient) {
         this.ctx.fillStyle = color;
-        this.ctx.fill();
+        this.ctx.fill("evenodd");
     }
 
     public circle(pos: Vec, radius: number, color?: string) {

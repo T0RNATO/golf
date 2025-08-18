@@ -3,7 +3,6 @@ import {canvas as c, drawable, global} from "./main.ts";
 const arrow = "m0 -42l-26 30 l20-5 l-10 60 l30 0l-10-60 20 5z";
 
 function strokeWall() {
-    // c.stroke(30, "#bd77b3");
     c.stroke(60, "#bd77b3");
     c.stroke(30, "#f2a7e8");
     c.fill("#f2a7e8");
@@ -15,17 +14,20 @@ function strokeWall() {
 function drawWalls() {
     const g = global.level.geo;
 
+    let currPath0 = g[0];
     c.startPath(g[0].start);
     for (let i = 1; i < g.length; i++) {
         if (g[i].start.equals(g[i-1].end)) {
             c.path(g[i].start);
         } else {
             c.path(g[i-1].end);
-            strokeWall();
-            c.startPath(g[i].start);
+            c.path(currPath0.end);
+            c.jump(g[i].start);
+            currPath0 = g[i];
         }
     }
     c.path(g.at(-1)!.end);
+    c.path(currPath0.end);
     strokeWall();
 }
 
@@ -75,12 +77,18 @@ function drawBoosters() {
     }
 }
 
+function drawHole() {
+    c.circle(global.level.hole, 25, "#222");
+    c.circle(global.level.hole, 20, "black");
+}
+
 export function register() {
     c.addElement(drawable(() => {
         if (global.level.geo.length) {
             drawWalls();
             drawSlopes();
             drawBoosters();
+            drawHole();
         }
     }))
 }

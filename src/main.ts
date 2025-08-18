@@ -37,6 +37,7 @@ export const global = {
             pos: Vec,
             angle: number
         }[],
+        hole: null as unknown as Vec,
 
         set packet(packet: JoinPacket) {
             this.geo = packet.geo.map(el => {return {
@@ -52,6 +53,7 @@ export const global = {
                 pos: new Vec(booster[0], booster[1]),
                 angle: booster[2],
             }});
+            this.hole = new Vec(...packet.hole);
         },
 
         get packet(): Partial<JoinPacket> {
@@ -83,6 +85,10 @@ global.ws.onmessage = (ev) => {
                     canvas.addElement(b);
                 }
             }
+        },
+
+        sunk() {
+
         }
     })
 };

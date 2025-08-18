@@ -1,21 +1,20 @@
 import type {ServerWebSocket} from "bun";
+import type {Level} from "../../server/levels.ts";
 
-export type S2C = JoinPacket | TickPacket;
+export type S2C = JoinPacket | TickPacket | BallSunkPacket;
 export type C2S = PuttPacket;
 type Packet = S2C | C2S;
 
 type vec  = [number, number];
-type vec3 = [number, number, number];
-type vec4 = [number, number, number, number];
-type vec5 = [number, number, number, number, number];
 
-export interface JoinPacket {
+export interface JoinPacket extends Level {
     type: "join",
     token: string,
-    geo: vec4[],
-    slopes: vec5[],
     pos: vec,
-    boosters: vec3[]
+}
+
+interface BallSunkPacket {
+    type: "sunk",
 }
 
 interface TickPacket {

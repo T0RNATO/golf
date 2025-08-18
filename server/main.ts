@@ -2,6 +2,7 @@ import {randomUUIDv7, type ServerWebSocket} from "bun";
 import {Ball} from "./ball.ts";
 import {type C2S, handlePacket, type S2C, sendPacket} from "@common/packets.ts";
 import {Vec} from "@common/vec.ts";
+import levels from "./levels.ts";
 
 type vec4 = [number, number, number, number];
 
@@ -20,71 +21,15 @@ export const config = {
         return this.__geoRaw
     },
     geo: [] as {start: Vec, end: Vec}[],
-    slopes: [
-        // x, y, w, h, angle (0 up, 1 right, etc)
-        // [0, 0, 200, 200, 0],
-        // [0, -400, 200, 200, 1],
-        // [-400, -400, 200, 200, 2],
-        // [-400, 0, 200, 200, 3],
-    ] as [number, number, number, number, number][],
-    boosters: [
-        // x, y, angle
-        // [-300, -300, 2],
-        // [100, -300, 1],
-        // [-300, 100, 3],
-        // [100, 100, 0],
-    ] as [number, number, number][]
+    slopes: [] as [number, number, number, number, number][],
+    boosters: [] as [number, number, number][],
+    hole: null as unknown as Vec,
 }
-config.geoRaw = [
-    [
-        0,
-        0,
-        1350,
-        0
-    ],
-    [
-        1350,
-        0,
-        1350,
-        800
-    ],
-    [
-        1350,
-        800,
-        0,
-        800
-    ],
-    [
-        0,
-        800,
-        0,
-        0
-    ],
-    [
-        350,
-        200,
-        1050,
-        200
-    ],
-    [
-        1050,
-        200,
-        1050,
-        550
-    ],
-    [
-        1050,
-        550,
-        350,
-        550
-    ],
-    [
-        350,
-        550,
-        350,
-        200
-    ]
-]
+
+config.geoRaw = levels[0].geo;
+config.slopes = levels[0].slopes;
+config.boosters = levels[0].boosters;
+config.hole = new Vec(...levels[0].hole);
 
 const server = Bun.serve({
     fetch(req, server) {
@@ -98,7 +43,7 @@ const server = Bun.serve({
     websocket: {
         open(ws: ServerWebSocket<string>) {
             if (!(ws.data in Ball.ALL)) {
-                new Ball(ws.data, new Vec(50 * (activePlayers.size + 1), 100));
+                new Ball(ws.data, new Vec(50 * (activePlayers.size + 2), 100));
             }
             sendPacket(ws, {
                 type: "join",
@@ -106,9 +51,11 @@ const server = Bun.serve({
                 geo: config.geoRaw,
                 slopes: config.slopes,
                 pos: Ball.ALL[ws.data].position.arr(),
-                boosters: config.boosters
+                boosters: config.boosters,
+                hole: config.hole.arr()
             })
             activePlayers.add(ws.data);
+            playerSockets.set(ws.data, ws);
             ws.subscribe("game");
         },
 
@@ -132,6 +79,7 @@ function publish(packet: S2C) {
 }
 
 const activePlayers: Set<string> = new Set();
+export const playerSockets: Map<string, ServerWebSocket<string>> = new Map();
 let tick = 0;
 
 setInterval(() => {
