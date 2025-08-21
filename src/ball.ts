@@ -8,14 +8,14 @@ export class Ball implements Drawable {
     public lerp = new Vec(0, 0);
     public radius = 20;
 
-    public static ALL: Record<string, Ball> = {};
+    public static ALL: Map<string, Ball> = new Map();
 
     private dragging = false;
     private mouse = new Vec(0, 0);
 
     constructor(public id: string, public colour: string, public isPlayer = false, position?: Vec) {
         this.position = position || new Vec(-100, -100);
-        Ball.ALL[id] = this;
+        Ball.ALL.set(id, this);
 
         // maybe remove these listeners on destruction?
         if (this.isPlayer) {
@@ -59,6 +59,7 @@ export class Ball implements Drawable {
             canvas.stroke(5, "red");
         }
         if (this.isPlayer && !global.levelEditing) {
+            console.log(this.isPlayer, global.levelEditing);
             canvas.camera = this.position;
         }
         canvas.circle(this.position, this.radius, this.colour);

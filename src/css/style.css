@@ -28,13 +28,16 @@
     cursor: pointer;
 }
 
+* {
+    font-family: ComingSoon, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
 #menu {
     width: 80vw;
     height: 80vh;
     background: rgb(20 20 20 / 0.8);
     border-radius: 20px;
     color: white;
-    font-family: ComingSoon, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     display: flex;
     align-items: center;
     justify-content: center;
@@ -49,7 +52,7 @@
     }
 }
 
-input, button, label {
+input, button, label, td {
     border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
     outline: 5px black solid;
 }
@@ -59,7 +62,6 @@ input {
     width: 400px;
     background: rgb(120 120 120 / 0.8);
     border: none;
-    font-family: inherit;
     font-size: 30px;
     color: white;
     padding: 8px;
@@ -87,4 +89,36 @@ button {
     color: white;
     padding: 10px;
     cursor: pointer;
+}
+
+#score {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgb(20 20 20 / 0.8);
+    color: white;
+    padding: 20px;
+    user-select: none;
+}
+
+table, tr:nth-child(2n) {
+    background: rgb(120 120 120 / 0.4);
+}
+
+td {
+    padding: 10px;
+    min-width: 100px;
+    &.finished {
+        background: springgreen;
+        color: black;
+        font-weight: 800;
+    }
+}
+
+#menu + #score {
+    display: none;
+}
+
+h2 {
+    margin: 0;
 }

@@ -1,7 +1,7 @@
 import type {ServerWebSocket} from "bun";
 import type {Level} from "../../server/levels.ts";
 
-export type S2C = JoinPacket | TickPacket | BallSunkPacket | NewPlayerPacket;
+export type S2C = JoinPacket | TickPacket | BallSunkPacket | PlayerListPacket | ScorePacket;
 export type C2S = PuttPacket | PlayerInfoPacket;
 type Packet = S2C | C2S;
 
@@ -10,19 +10,22 @@ type vec  = [number, number];
 export interface JoinPacket extends Level {
     type: "join",
     token: string,
+}
+
+interface PlayerListPacket {
+    type: "playerlist",
     players: {
         colour: string,
         name: string,
-        id: string
+        id: string,
+        score: number,
     }[]
 }
 
-interface NewPlayerPacket {
-    type: "newplayer",
-    colour: string,
-    name: string,
-    id: string,
-    pos: vec,
+interface ScorePacket {
+    type: "score",
+    player: string
+    score: number,
 }
 
 interface BallSunkPacket {

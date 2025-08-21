@@ -78,8 +78,10 @@ function drawBoosters() {
 }
 
 function drawHole() {
-    c.circle(global.level.hole, 25, "#222");
-    c.circle(global.level.hole, 20, "black");
+    if (global.level.hole) {
+        c.circle(global.level.hole, 25, "#222");
+        c.circle(global.level.hole, 20, "black");
+    }
 }
 
 export function register() {

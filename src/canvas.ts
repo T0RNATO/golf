@@ -6,7 +6,7 @@ export interface Drawable {
 }
 
 export class Canvas {
-    private elements: Drawable[] = [];
+    private elements: Set<Drawable> = new Set();
     private _draw = this.draw.bind(this);
 
     public canvas = document.getElementById("canvas")! as HTMLCanvasElement;
@@ -70,7 +70,11 @@ export class Canvas {
     }
 
     public addElement(el: Drawable) {
-        this.elements.push(el);
+        this.elements.add(el);
+    }
+
+    public removeElement(el: Drawable) {
+        this.elements.delete(el);
     }
 
     public gradient(from: Vec, to: Vec, stops: Record<number, string>): CanvasGradient {
@@ -103,14 +107,14 @@ export class Canvas {
     private draw() {
         this.ctx.fillStyle = "#2a2a2e";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        for (const el of this.elements) {
+        for (const el of this.elements.values()) {
             el.draw(this);
         }
         window.requestAnimationFrame(this._draw);
     }
 
     private tick() {
-        for (const el of this.elements) {
+        for (const el of this.elements.values()) {
             el.tick(this);
         }
     }

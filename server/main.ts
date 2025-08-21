@@ -2,7 +2,7 @@ import {randomUUIDv7, type ServerWebSocket} from "bun";
 import {Ball} from "./ball.ts";
 import {type C2S, handlePacket, type S2C, sendPacket} from "@common/packets.ts";
 import {Vec} from "@common/vec.ts";
-import levels from "./levels.ts";
+import levels, {lobby} from "./levels.ts";
 
 type vec4 = [number, number, number, number];
 
@@ -23,13 +23,13 @@ export const config = {
     geo: [] as {start: Vec, end: Vec}[],
     slopes: [] as [number, number, number, number, number][],
     boosters: [] as [number, number, number][],
-    hole: null as unknown as Vec,
+    hole: null as Vec | null,
 }
 
-config.geoRaw = levels[0].geo;
-config.slopes = levels[0].slopes;
-config.boosters = levels[0].boosters;
-config.hole = new Vec(...levels[0].hole);
+config.geoRaw = lobby.geo;
+config.slopes = lobby.slopes;
+config.boosters = lobby.boosters;
+config.hole = lobby.hole ? new Vec(...lobby.hole): null;
 
 const server = Bun.serve({
     fetch(req, server) {
@@ -38,38 +38,30 @@ const server = Bun.serve({
 
         if (players.has(token) || !token) {
             // upgrade the request to a WebSocket
-            if (server.upgrade(req, {data: token || randomUUIDv7('base64url')})) {
-                if (token) {
-                    const player = players.get(token)!;
-                    publish({
-                        type: "newplayer",
-                        colour: player.colour,
-                        name: player.name,
-                        id: token,
-                        pos: Ball.ALL[token].position.arr()
-                    })
-                }
-                return;
-            }
+            if (server.upgrade(req, {data: token || randomUUIDv7('base64url')})) return;
         }
         return new Response("Upgrade failed", { status: 500 });
     },
     websocket: {
         open(ws: ServerWebSocket<string>) {
+            ws.subscribe("game");
             sendPacket(ws, {
                 type: "join",
                 token: ws.data,
                 geo: config.geoRaw,
                 slopes: config.slopes,
                 boosters: config.boosters,
-                hole: config.hole.arr(),
-                players: Array.from(players.entries()).map(([id, p]) => {return {colour: p.colour, name: p.name, id}}),
+                hole: config.hole?.arr(),
             })
-            ws.subscribe("game");
+            if (players.has(ws.data)) {
+                activePlayers.add(ws.data);
+            }
+            updatePlayerList();
         },
 
         close(ws: ServerWebSocket<string>) {
             activePlayers.delete(ws.data);
+            updatePlayerList();
         },
 
         message(ws: ServerWebSocket<string>, message) {
@@ -81,36 +73,50 @@ const server = Bun.serve({
 
                 playerinfo(packet) {
                     if (!(ws.data in Ball.ALL)) {
-                        new Ball(ws.data, new Vec(50 * (activePlayers.size + 2), 100));
+                        new Ball(ws.data, new Vec(50 * (activePlayers.size + 1), 50));
                     }
                     activePlayers.add(ws.data);
                     players.set(ws.data, {
                         ws,
                         name: packet.name,
-                        colour: packet.colour
+                        colour: packet.colour,
+                        score: 0
                     });
 
-                    publish({
-                        type: "newplayer",
-                        colour: packet.colour,
-                        name: packet.name,
-                        id: ws.data,
-                        pos: Ball.ALL[ws.data].position.arr()
-                    })
+                    updatePlayerList();
                 },
             })
         }
     },
 });
 
-function publish(packet: S2C) {
+export function publish(packet: S2C) {
     server.publish("game", JSON.stringify(packet));
+}
+
+function updatePlayerList() {
+    const p = [];
+    for (const [id, player] of players.entries()) {
+        if (activePlayers.has(id)) {
+            p.push({
+                id,
+                name: player.name,
+                colour: player.colour,
+                score: player.score
+            });
+        }
+    }
+    publish({
+        type: "playerlist",
+        players: p
+    })
 }
 
 interface Player {
     ws: ServerWebSocket<string>,
     colour: string,
     name: string,
+    score: number,
 }
 
 const activePlayers: Set<string> = new Set();

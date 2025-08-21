@@ -39,7 +39,7 @@ export const global = {
             pos: Vec,
             angle: number
         }[],
-        hole: null as unknown as Vec,
+        hole: null as Vec | null,
 
         set packet(packet: JoinPacket) {
             this.geo = packet.geo.map(el => {return {
@@ -55,7 +55,7 @@ export const global = {
                 pos: new Vec(booster[0], booster[1]),
                 angle: booster[2],
             }});
-            this.hole = new Vec(...packet.hole);
+            this.hole = packet.hole ? new Vec(...packet.hole): null;
         },
 
         get packet(): Partial<JoinPacket> {
@@ -97,28 +97,38 @@ global.ws.onerror = () => {
     }
 }
 
+const scoreboard = document.getElementById("scoreboard")! as HTMLTableElement;
+
+function addScoreboardRow(id: string, name: string) {
+    const row = document.createElement("tr");
+    row.id = id;
+    const cell = document.createElement("td");
+    cell.innerText = name;
+    row.appendChild(cell);
+    row.appendChild(document.createElement("td"));
+    scoreboard.appendChild(row);
+}
+
 function onMessage(ev: MessageEvent) {
     handlePacket<S2C>(ev.data, {
         join(packet) {
             global.level.packet = packet;
             document.cookie = `token=${packet.token}`
             token = packet.token;
-            for (const player of packet.players) {
-                newplayer({
-                    colour: player.colour,
-                    name: player.name,
-                    id: player.id,
-                    pos: [0, 0],
-                })
-            }
         },
 
         tick(packet) {
             for (const [id, serverBall] of Object.entries(packet.balls)) {
-                if (id in Ball.ALL) {
-                    const clientBall = Ball.ALL[id];
+                if (Ball.ALL.has(id)) {
+                    const clientBall = Ball.ALL.get(id)!;
                     const target = new Vec(...serverBall.position);
-                    clientBall.lerp = target.sub(clientBall.position).mul(0.2);
+                    const lerp = target.sub(clientBall.position).mul(0.2);
+                    // Lerp to target if reasonable, or just teleport if it's too far.
+                    if (lerp.lenSq() < 500) {
+                        clientBall.lerp = lerp;
+                    } else {
+                        clientBall.position = target;
+                    }
                 }
             }
         },
@@ -127,11 +137,37 @@ function onMessage(ev: MessageEvent) {
 
         },
 
-        newplayer
+        playerlist(packet) {
+            const ids = new Set();
+
+            for (const player of packet.players) {
+                ids.add(player.id);
+                if (!Ball.ALL.has(player.id)) {
+                    canvas.addElement(new Ball(player.id, player.colour, player.id === token, new Vec(-1000, -1000)));
+                    addScoreboardRow(player.id, player.name);
+                }
+                setScore(player.id, player.score, true);
+            }
+
+            for (const id of Array.from(Ball.ALL.keys())) {
+                if (!ids.has(id)) {
+                    canvas.removeElement(Ball.ALL.get(id)!);
+                    Ball.ALL.delete(id);
+                    document.getElementById(id)?.remove();
+                }
+            }
+        },
+
+        score(packet) {
+            setScore(packet.player, packet.score);
+        }
     })
 }
 
-function newplayer(packet: {id: string, colour: string, name: string, pos: [number, number]}) {
-    const b = new Ball(packet.id, packet.colour, packet.id === token, new Vec(...packet.pos));
-    canvas.addElement(b);
+function setScore(player: string, score: number, force = false) {
+    const cell = document.getElementById(player)!.children[1] as HTMLTableCellElement;
+    cell.innerText = String(score);
+    if (!force) {
+        cell.classList.add("finished");
+    }
 }
