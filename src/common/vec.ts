@@ -57,6 +57,14 @@ export class Vec {
         return this;
     }
 
+    dot(p: _Vec) {
+        return this.x * p.x + this.y * p.y;
+    }
+
+    vecRes(v: Vec) {
+        return v.mul(this.dot(v) / v.dot(v));
+    }
+
     // Rotates the vector anticlockwise in increments of 90°
     $rot(amount: number) {
         amount = amount % 4;

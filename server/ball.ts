@@ -66,25 +66,27 @@ export class Ball {
             // The wall is not horiz/vert so must be diagonal (because I don't support any others lol)
 
             // Is the ball in the wall's bounding box?
-            if (isBetween(newP[0], p1[0], p2[0]) && isBetween(newP[1], p1[1], p2[1])) {
+            if (isBetween(newP[0], p1[0], p2[0], shiftFactor) && isBetween(newP[1], p1[1], p2[1], shiftFactor)) {
                 // Is the wall pointing towards the origin?
                 const axis = Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1]);
 
-                const higher = wall.start < wall.end ? wall.start : wall.end;
+                const higher = wall.start.y > wall.end.y ? wall.start : wall.end;
 
                 const ball2Wall = this.position.sub(higher);
                 const newBall2Wall = newPos.sub(higher);
 
-                const sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
-                const shift = new Vec(negPos(sideOfWall === axis), negPos(!sideOfWall)).$mul(shiftFactor * Math.SQRT2);
+                let sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
 
-                console.log(axis, sideOfWall);
+                const shift = new Vec(negPos(sideOfWall === axis), negPos(!sideOfWall)).$mul(Math.SQRT1_2);
 
-                ball2Wall.$add(shift);
-                newBall2Wall.$add(shift);
+                ball2Wall   .$sub(shift.mul(shiftFactor));
+                newBall2Wall.$sub(shift.mul(shiftFactor));
+
+                sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
+                const newSideOfWall = Math.abs(newBall2Wall.x) < Math.abs(newBall2Wall.y);
 
                 // Has the ball started and ended on different sides of the wall?
-                if ((Math.abs(ball2Wall.x) > Math.abs(ball2Wall.y)) !== (Math.abs(newBall2Wall.x) > Math.abs(newBall2Wall.y))) {
+                if (sideOfWall !== newSideOfWall) {
                     const {x, y} = this.velocity;
                     if (axis) {
                         // noinspection JSSuspiciousNameCombination
@@ -92,7 +94,10 @@ export class Ball {
                     } else {
                         this.velocity.$set(-y, -x);
                     }
-                    newPos = this.position; // not ideal since the ball will visually bounce against nothing.
+                    const w = wall.end.sub(wall.start);
+                    const p = newPos.sub(wall.start);
+
+                    newPos = wall.start.add(p.vecRes(w)).add(shift.mul(shiftFactor + 1));
                 }
             }
         }
