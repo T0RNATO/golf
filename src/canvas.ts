@@ -20,6 +20,21 @@ export class Canvas {
         this.ctx.fillRect(...this.worldToScreen(pos), width * this.dpi, height * this.dpi);
     }
 
+    public newPath(start: Vec) {
+        const canvas = this;
+        const path = {
+            __p: new Path2D(),
+            path(pos: Vec) {
+                this.__p.lineTo(...canvas.worldToScreen(pos));
+            },
+            jump(pos: Vec) {
+                this.__p.moveTo(...canvas.worldToScreen(pos));
+            }
+        }
+        path.jump(start);
+        return path;
+    }
+
     public startPath(pos: Vec) {
         this.ctx.beginPath();
         this.ctx.moveTo(...this.worldToScreen(pos));
@@ -33,10 +48,19 @@ export class Canvas {
         this.ctx.moveTo(...this.worldToScreen(pos));
     }
 
-    public stroke(width: number, color: string | CanvasGradient) {
+    public stroke(width: number, color: string | CanvasGradient, path?: {__p: Path2D}) {
         this.ctx.lineWidth = width * this.dpi;
         this.ctx.strokeStyle = color;
-        this.ctx.stroke();
+        path ? this.ctx.stroke(path.__p) : this.ctx.stroke();
+    }
+
+    public fill(color: string | CanvasGradient, path?: {__p: Path2D}) {
+        this.ctx.fillStyle = color;
+        if (path) {
+            this.ctx.fill(path.__p, "evenodd");
+        } else {
+            this.ctx.fill("evenodd");
+        }
     }
 
     public transformCtx(origin: Vec) {
@@ -49,17 +73,6 @@ export class Canvas {
 
     public resetTransformation() {
         this.ctx.resetTransform();
-    }
-
-    public fillPath(pos: Vec, path: string, color: string | CanvasGradient) {
-        this.ctx.fillStyle = color;
-        const _pos = this.worldToScreen(pos);
-        this.ctx.fill(new Path2D(`m${_pos[0]} ${_pos[1]}` + path));
-    }
-
-    public fill(color: string | CanvasGradient) {
-        this.ctx.fillStyle = color;
-        this.ctx.fill("evenodd");
     }
 
     public circle(pos: Vec, radius: number, color?: string) {

@@ -52,7 +52,8 @@ export function register() {
             if (dimensions.x < 0) {
                 wallStart.x += dimensions.x;
                 dimensions.x *= -1;
-            } else if (dimensions.y < 0) {
+            }
+            if (dimensions.y < 0) {
                 wallStart.y += dimensions.y;
                 dimensions.y *= -1;
             }

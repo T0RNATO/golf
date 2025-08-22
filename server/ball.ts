@@ -32,6 +32,11 @@ export class Ball {
     private collideWithWalls(newPos: Vec) {
         const oldP = this.position.arr();
         const newP = newPos.arr();
+
+        // Amount the walls are "moved" towards the player in collision calculations
+        // radius + 0.5 * wall draw width
+        const shiftFactor = this.radius + 12;
+
         walls: for (const wall of config.geo) {
             const p1 = wall.start.arr();
             const p2 = wall.end.arr();
@@ -41,15 +46,17 @@ export class Ball {
                 const opp = Number(!axis);
                 // Is the wall perpendicular to this axis?
                 if (p1[axis] === p2[axis]) {
+                    const shiftAxis = Math.sign(oldP[axis] - p1[axis]);
+                    const shift = shiftFactor * shiftAxis;
                     if (
-                        isBetween(newP[opp], p1[opp], p2[opp], this.radius) && // Is the new position of the ball between its bounds?
-                        (newP[axis] > p1[axis]) !== (oldP[axis] > p1[axis]) // Has the ball started and ended on different sides of the wall?
+                        isBetween(newP[opp], p1[opp], p2[opp], shiftFactor) && // Is the new position of the ball between its bounds?
+                        (newP[axis] > (p1[axis] + shift)) !== (oldP[axis] > (p1[axis] + shift)) // Has the ball started and ended on different sides of the wall?
                     ) {
                         if (axis === 0)
                             this.velocity.x *= -1;
                         else
                             this.velocity.y *= -1;
-                        newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]);
+                        newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]) + shiftAxis * (shiftFactor + 1);
                         newPos = new Vec(...newP);
                     }
                     continue walls;
@@ -60,12 +67,26 @@ export class Ball {
 
             // Is the ball in the wall's bounding box?
             if (isBetween(newP[0], p1[0], p2[0]) && isBetween(newP[1], p1[1], p2[1])) {
-                const ball2Wall = this.position.sub(wall.start);
-                const newBall2Wall = newPos.sub(wall.start);
+                // Is the wall pointing towards the origin?
+                const axis = Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1]);
+
+                const higher = wall.start < wall.end ? wall.start : wall.end;
+
+                const ball2Wall = this.position.sub(higher);
+                const newBall2Wall = newPos.sub(higher);
+
+                const sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
+                const shift = new Vec(negPos(sideOfWall === axis), negPos(!sideOfWall)).$mul(shiftFactor * Math.SQRT2);
+
+                console.log(axis, sideOfWall);
+
+                ball2Wall.$add(shift);
+                newBall2Wall.$add(shift);
+
                 // Has the ball started and ended on different sides of the wall?
                 if ((Math.abs(ball2Wall.x) > Math.abs(ball2Wall.y)) !== (Math.abs(newBall2Wall.x) > Math.abs(newBall2Wall.y))) {
                     const {x, y} = this.velocity;
-                    if (Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1])) {
+                    if (axis) {
                         // noinspection JSSuspiciousNameCombination
                         this.velocity.$set(y, x);
                     } else {
@@ -130,4 +151,8 @@ function isBetween(n: number, b1: number, b2: number, tolerance: number = 0) {
     const upper = Math.max(b1, b2) + tolerance;
     const lower = Math.min(b1, b2) - tolerance;
     return n > lower && n < upper;
+}
+
+function negPos(b: boolean): -1 | 1 {
+    return b ? 1: -1;
 }
