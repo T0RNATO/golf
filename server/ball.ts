@@ -67,37 +67,30 @@ export class Ball {
 
             // Is the ball in the wall's bounding box?
             if (isBetween(newP[0], p1[0], p2[0], shiftFactor) && isBetween(newP[1], p1[1], p2[1], shiftFactor)) {
-                // Is the wall pointing towards the origin?
-                const axis = Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1]);
+                const ball2Wall = this.position.sub(wall.start);
+                const newBall2Wall = newPos.sub(wall.start);
 
-                const higher = wall.start.y > wall.end.y ? wall.start : wall.end;
+                const alongWall = wall.end.sub(wall.start);
+                const wallRes = newBall2Wall.vecRes(alongWall);
 
-                const ball2Wall = this.position.sub(higher);
-                const newBall2Wall = newPos.sub(higher);
-
-                let sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
-
-                const shift = new Vec(negPos(sideOfWall === axis), negPos(!sideOfWall)).$mul(Math.SQRT1_2);
+                const shift = newBall2Wall.sub(wallRes).$norm();
 
                 ball2Wall   .$sub(shift.mul(shiftFactor));
                 newBall2Wall.$sub(shift.mul(shiftFactor));
 
-                sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
+                const sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
                 const newSideOfWall = Math.abs(newBall2Wall.x) < Math.abs(newBall2Wall.y);
 
                 // Has the ball started and ended on different sides of the wall?
                 if (sideOfWall !== newSideOfWall) {
                     const {x, y} = this.velocity;
-                    if (axis) {
+                    // Is the wall pointing towards the origin?
+                    if (Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1]))
                         // noinspection JSSuspiciousNameCombination
                         this.velocity.$set(y, x);
-                    } else {
-                        this.velocity.$set(-y, -x);
-                    }
-                    const w = wall.end.sub(wall.start);
-                    const p = newPos.sub(wall.start);
+                    else this.velocity.$set(-y, -x);
 
-                    newPos = wall.start.add(p.vecRes(w)).add(shift.mul(shiftFactor + 1));
+                    newPos = wall.start.add(wallRes).add(shift.mul(shiftFactor + 1));
                 }
             }
         }
