@@ -6,6 +6,9 @@ export class Ball {
     public position: Vec;
     public velocity = new Vec(0, 0);
     public radius = 20;
+    // Amount the walls are "moved" towards the player in collision calculations
+    // radius + 0.5 * wall draw width
+    private shiftFactor = this.radius + 12;
 
     public static ALL: Record<string, Ball> = {};
 
@@ -33,10 +36,6 @@ export class Ball {
         const oldP = this.position.arr();
         const newP = newPos.arr();
 
-        // Amount the walls are "moved" towards the player in collision calculations
-        // radius + 0.5 * wall draw width
-        const shiftFactor = this.radius + 12;
-
         walls: for (const wall of config.geo) {
             const p1 = wall.start.arr();
             const p2 = wall.end.arr();
@@ -47,16 +46,16 @@ export class Ball {
                 // Is the wall perpendicular to this axis?
                 if (p1[axis] === p2[axis]) {
                     const shiftAxis = Math.sign(oldP[axis] - p1[axis]);
-                    const shift = shiftFactor * shiftAxis;
+                    const shift = this.shiftFactor * shiftAxis;
                     if (
-                        isBetween(newP[opp], p1[opp], p2[opp], shiftFactor) && // Is the new position of the ball between its bounds?
+                        isBetween(newP[opp], p1[opp], p2[opp], this.shiftFactor) && // Is the new position of the ball between its bounds?
                         (newP[axis] > (p1[axis] + shift)) !== (oldP[axis] > (p1[axis] + shift)) // Has the ball started and ended on different sides of the wall?
                     ) {
                         if (axis === 0)
                             this.velocity.x *= -1;
                         else
                             this.velocity.y *= -1;
-                        newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]) + shiftAxis * (shiftFactor + 1);
+                        newP[axis] = p1[axis] + Number(newP[axis] < p1[axis]) + shiftAxis * (this.shiftFactor + 1);
                         newPos = new Vec(...newP);
                     }
                     continue walls;
@@ -64,37 +63,47 @@ export class Ball {
             }
 
             // The wall is not horiz/vert so must be diagonal (because I don't support any others lol)
-
-            // Is the ball in the wall's bounding box?
-            if (isBetween(newP[0], p1[0], p2[0], shiftFactor) && isBetween(newP[1], p1[1], p2[1], shiftFactor)) {
-                const ball2Wall = this.position.sub(wall.start);
-                const newBall2Wall = newPos.sub(wall.start);
-
-                const alongWall = wall.end.sub(wall.start);
-                const wallRes = newBall2Wall.vecRes(alongWall);
-
-                const shift = newBall2Wall.sub(wallRes).$norm();
-
-                ball2Wall   .$sub(shift.mul(shiftFactor));
-                newBall2Wall.$sub(shift.mul(shiftFactor));
-
-                const sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
-                const newSideOfWall = Math.abs(newBall2Wall.x) < Math.abs(newBall2Wall.y);
-
-                // Has the ball started and ended on different sides of the wall?
-                if (sideOfWall !== newSideOfWall) {
-                    const {x, y} = this.velocity;
-                    // Is the wall pointing towards the origin?
-                    if (Math.sign(p1[0] - p2[0]) == Math.sign(p1[1] - p2[1]))
-                        // noinspection JSSuspiciousNameCombination
-                        this.velocity.$set(y, x);
-                    else this.velocity.$set(-y, -x);
-
-                    newPos = wall.start.add(wallRes).add(shift.mul(shiftFactor + 1));
-                }
-            }
+            newPos = this.collideWithDiagonalWall(wall, newPos);
         }
         return newPos;
+    }
+
+    private collideWithDiagonalWall({start, end}: {start: Vec, end: Vec}, newPos: Vec): Vec {
+        // Only collide if the ball is in the wall's bounding box
+        if (!(
+            isBetween(newPos.x, start.x, end.x, this.shiftFactor) &&
+            isBetween(newPos.y, start.y, end.y, this.shiftFactor)
+        )) return newPos;
+
+        const ball2Wall = this.position.sub(start);
+        const newBall2Wall = newPos.sub(start);
+
+        const alongWall = end.sub(start);
+        const wallRes = newBall2Wall.vecRes(alongWall);
+
+        const shift = newBall2Wall.sub(wallRes).$norm();
+
+        ball2Wall   .$sub(shift.mul(this.shiftFactor));
+        newBall2Wall.$sub(shift.mul(this.shiftFactor));
+
+        const sideOfWall = Math.abs(ball2Wall.x) < Math.abs(ball2Wall.y);
+        const newSideOfWall = Math.abs(newBall2Wall.x) < Math.abs(newBall2Wall.y);
+
+        // Only collide if the ball has started and ended on different sides of the wall
+        if (sideOfWall === newSideOfWall) return newPos;
+
+        // Does the wall point towards the top-left of the screen?
+        const pointsToOrigin = Math.sign(start.x - end.x) == Math.sign(start.y - end.y);
+
+        const {x, y} = this.velocity;
+        this.velocity.$set(
+            pointsToOrigin ? y : -y,
+            pointsToOrigin ? x : -x
+        );
+
+        // Resolve the position of the ball so it's not in the wall - find the closest point on the wall to the ball
+        // and then add the minimum distance away from it that it can be.
+        return start.add(wallRes).add(shift.mul(this.shiftFactor + 1));
     }
 
     tick() {
