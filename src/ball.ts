@@ -59,7 +59,6 @@ export class Ball implements Drawable {
             canvas.stroke(5, "red");
         }
         if (this.isPlayer && !global.levelEditing) {
-            console.log(this.isPlayer, global.levelEditing);
             canvas.camera = this.position;
         }
         canvas.circle(this.position, this.radius, this.colour);

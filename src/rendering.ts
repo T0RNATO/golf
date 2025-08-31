@@ -1,6 +1,8 @@
 import {canvas as c, drawable, global} from "./main.ts";
 
 const arrow = "m0 -42l-26 30 l20-5 l-10 60 l30 0l-10-60 20 5z";
+const wallColour = "#bd77b3";
+const floorColour = "#f2a7e8";
 
 function drawSlopes() {
     for (const slope of global.level.slopes) {
@@ -77,14 +79,18 @@ export function register() {
             boundary.path(currPath0.end);
 
             // Draw floor
-            c.fill("#f2a7e8", boundary);
+            c.fill(floorColour, boundary);
 
             drawSlopes();
             drawBoosters();
             drawHole();
 
             // Draw walls
-            c.stroke(25, "#bd77b3", boundary);
+            c.stroke(25, wallColour, boundary);
+            for (const peg of global.level.pegs) {
+                c.circle(peg, 12, wallColour);
+            }
+
             if (global.levelEditing) {
                 c.stroke(2, "red", boundary);
             }

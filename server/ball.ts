@@ -65,14 +65,27 @@ export class Ball {
             // The wall is not horiz/vert so must be diagonal (because I don't support any others lol)
             newPos = this.collideWithDiagonalWall(wall, newPos);
         }
+
+        for (const pegN of config.pegs) {
+            const peg = new Vec(...pegN);
+            const normal = peg.sub(this.position);
+
+            if (normal.lenSq() < this.shiftFactor ** 2) {
+                normal.$norm();
+                this.velocity = this.velocity.sub(normal.mul(2 * this.velocity.dot(normal)));
+                return peg.sub(normal.mul(this.shiftFactor + 1));
+            }
+        }
+
         return newPos;
     }
 
     private collideWithDiagonalWall({start, end}: {start: Vec, end: Vec}, newPos: Vec): Vec {
         // Only collide if the ball is in the wall's bounding box
+        // idk why + 10, but it makes it way harder for the ball to clip through the convex corner between two walls
         if (!(
-            isBetween(newPos.x, start.x, end.x, this.shiftFactor) &&
-            isBetween(newPos.y, start.y, end.y, this.shiftFactor)
+            isBetween(newPos.x, start.x, end.x, this.shiftFactor + 10) &&
+            isBetween(newPos.y, start.y, end.y, this.shiftFactor + 10)
         )) return newPos;
 
         const ball2Wall = this.position.sub(start);
@@ -158,8 +171,4 @@ function isBetween(n: number, b1: number, b2: number, tolerance: number = 0) {
     const upper = Math.max(b1, b2) + tolerance;
     const lower = Math.min(b1, b2) - tolerance;
     return n > lower && n < upper;
-}
-
-function negPos(b: boolean): -1 | 1 {
-    return b ? 1: -1;
 }

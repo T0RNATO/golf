@@ -40,6 +40,7 @@ export const global = {
             angle: number
         }[],
         hole: null as Vec | null,
+        pegs: [] as Vec[],
 
         set packet(packet: JoinPacket) {
             this.geo = packet.geo.map(el => {return {
@@ -56,13 +57,15 @@ export const global = {
                 angle: booster[2],
             }});
             this.hole = packet.hole ? new Vec(...packet.hole): null;
+            this.pegs = packet.pegs.map(peg => new Vec(...peg));
         },
 
         get packet(): Partial<JoinPacket> {
             return {
                 geo: this.geo.map(el => [...el.start.arr(), ...el.end.arr()]),
                 slopes: this.slopes.map(el => [...el.pos.arr(), ...el.dimensions.arr(), el.angle]),
-                boosters: this.boosters.map(el => [...el.pos.arr(), el.angle])
+                boosters: this.boosters.map(el => [...el.pos.arr(), el.angle]),
+                pegs: this.pegs.map(el => [...el.arr()])
             }
         }
     }

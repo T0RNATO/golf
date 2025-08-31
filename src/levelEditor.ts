@@ -38,14 +38,16 @@ export function register() {
         const end = canvas.screenToWorld(new Vec(ev.x, ev.y)).$snap(50);
 
         if (selectedTool === 1) {
-            let {x, y} = end;
+            if (!wallStart.equals(end)) {
+                let {x, y} = end;
 
-            if (Math.abs(x - wallStart.x) > Math.abs(y - wallStart.y)) y = wallStart.y;
-            else if (Math.abs(x - wallStart.x) < Math.abs(y - wallStart.y)) x = wallStart.x;
+                if (Math.abs(x - wallStart.x) > Math.abs(y - wallStart.y)) y = wallStart.y;
+                else if (Math.abs(x - wallStart.x) < Math.abs(y - wallStart.y)) x = wallStart.x;
 
-            const wallEnd = new Vec(x, y);
+                const wallEnd = new Vec(x, y);
 
-            global.level.geo.push({start: wallStart, end: wallEnd});
+                global.level.geo.push({start: wallStart, end: wallEnd});
+            }
             wallStart = null;
         } else if (selectedTool === 2) {
             const dimensions = end.sub(wallStart);
@@ -69,6 +71,9 @@ export function register() {
             wallStart = null;
         } else if (selectedTool === 4) {
             global.level.hole = end;
+            wallStart = null;
+        } else if (selectedTool === 5) {
+            global.level.pegs.push(end);
             wallStart = null;
         }
 

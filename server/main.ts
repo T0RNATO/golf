@@ -24,11 +24,13 @@ export const config = {
     slopes: [] as [number, number, number, number, number][],
     boosters: [] as [number, number, number][],
     hole: null as Vec | null,
+    pegs: [] as [number, number][],
 }
 
 config.geoRaw = lobby.geo;
 config.slopes = lobby.slopes;
 config.boosters = lobby.boosters;
+config.pegs = lobby.pegs;
 config.hole = lobby.hole ? new Vec(...lobby.hole): null;
 
 const server = Bun.serve({
@@ -51,6 +53,7 @@ const server = Bun.serve({
                 geo: config.geoRaw,
                 slopes: config.slopes,
                 boosters: config.boosters,
+                pegs: config.pegs,
                 hole: config.hole?.arr(),
             })
             if (players.has(ws.data)) {

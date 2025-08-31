@@ -2,7 +2,8 @@ export interface Level {
     slopes: [number, number, number, number, number][]
     boosters: [number, number, number][]
     geo: [number, number, number, number][]
-    hole?: [number, number]
+    hole?: [number, number],
+    pegs: [number, number][],
 }
 
 export const lobby: Level = {
@@ -167,7 +168,17 @@ export const lobby: Level = {
             950,
             0
         ]
-    ]
+    ],
+    pegs: [
+        [
+            150,
+            500
+        ],
+        [
+            850,
+            500
+        ],
+    ],
 };
 
 export default [
@@ -234,6 +245,7 @@ export default [
         "boosters": [
             [400, 350, 3]
         ],
-        hole: [0, 0]
+        hole: [0, 0],
+        pegs: [],
     }
 ] satisfies Level[]
