@@ -1,6 +1,7 @@
 import {Vec} from "@common/vec.ts";
 import {config, players, publish} from "./main.ts";
 import {sendPacket} from "@common/packets.ts";
+import type level from "@common/level.ts"
 
 export class Ball {
     public position: Vec;
@@ -32,11 +33,11 @@ export class Ball {
         return newPos;
     }
 
-    private collideWithWalls(newPos: Vec) {
+    private collideWithWalls(newPos: Vec, wallLerp: number) {
         const oldP = this.position.arr();
         const newP = newPos.arr();
 
-        walls: for (const wall of config.geo) {
+        walls: for (const wall of config.level.geo.concat(config.level.movingWalls.map(v => resolveMovingWall(v, wallLerp)))) {
             const p1 = wall.start.arr();
             const p2 = wall.end.arr();
 
@@ -66,8 +67,7 @@ export class Ball {
             newPos = this.collideWithDiagonalWall(wall, newPos);
         }
 
-        for (const pegN of config.pegs) {
-            const peg = new Vec(...pegN);
+        for (const peg of config.level.pegs) {
             const normal = peg.sub(this.position);
 
             if (normal.lenSq() < this.shiftFactor ** 2) {
@@ -119,31 +119,31 @@ export class Ball {
         return start.add(wallRes).add(shift.mul(this.shiftFactor + 1));
     }
 
-    tick() {
-        for (const slope of config.slopes) {
+    tick(wallLerp: number) {
+        for (const slope of config.level.slopes) {
             if (
-                slope[0] < this.position.x &&
-                slope[1] < this.position.y &&
-                this.position.x < slope[0] + slope[2] &&
-                this.position.y < slope[1] + slope[3]
+                slope.pos.x < this.position.x &&
+                slope.pos.y < this.position.y &&
+                this.position.x < slope.pos.x + slope.dimensions.x &&
+                this.position.y < slope.pos.y + slope.dimensions.y
             ) {
-                this.velocity.$add(new Vec(0, -0.08).$rot(slope[4]));
+                this.velocity.$add(new Vec(0, -0.08).$rot(slope.angle));
             }
         }
-        for (const booster of config.boosters) {
+        for (const booster of config.level.boosters) {
             if (
-                booster[0] - 20 < this.position.x &&
-                booster[1] - 20 < this.position.y &&
-                this.position.x < booster[0] + 20 &&
-                this.position.y < booster[1] + 20
+                booster.pos.x - 20 < this.position.x &&
+                booster.pos.y - 20 < this.position.y &&
+                this.position.x < booster.pos.x + 20 &&
+                this.position.y < booster.pos.y + 20
             ) {
-                this.velocity = new Vec(0, 20).$rot(booster[2] + 2);
+                this.velocity = new Vec(0, 20).$rot(booster.angle + 2);
             }
         }
         if (this.velocity.lenSq() > 0) {
             let newPos = this.position.add(this.velocity);
             newPos = this.collideWithBalls(newPos);
-            newPos = this.collideWithWalls(newPos);
+            newPos = this.collideWithWalls(newPos, wallLerp);
             this.position = newPos;
 
             this.velocity.$mul(config.friction);
@@ -152,7 +152,7 @@ export class Ball {
             }
         }
 
-        if (config.hole && this.position.sub(config.hole).lenSq() < 400) {
+        if (config.level.hole && this.position.sub(config.level.hole).lenSq() < 400) {
             // sendPacket(players.get(this.id)!.ws, {
             //     type: "sunk"
             // })
@@ -171,4 +171,12 @@ function isBetween(n: number, b1: number, b2: number, tolerance: number = 0) {
     const upper = Math.max(b1, b2) + tolerance;
     const lower = Math.min(b1, b2) - tolerance;
     return n > lower && n < upper;
+}
+
+function resolveMovingWall(wall: (typeof level)["movingWalls"][number], lerp: number) {
+    console.log(wall.start.start.add(wall.end.start.sub(wall.start.start).mul(lerp)).y);
+    return {
+        start: wall.start.start.add(wall.end.start.sub(wall.start.start).mul(lerp)),
+        end:   wall.start.end.add(wall.end.end.sub(wall.start.end).mul(lerp)),
+    }
 }

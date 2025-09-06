@@ -48,6 +48,12 @@ export class Canvas {
         this.ctx.moveTo(...this.worldToScreen(pos));
     }
 
+    public segment(start: Vec, end: Vec, width: number, colour: string) {
+        this.startPath(start);
+        this.path(end);
+        this.stroke(width, colour);
+    }
+
     public stroke(width: number, color: string | CanvasGradient, path?: {__p: Path2D}) {
         this.ctx.lineWidth = width * this.dpi;
         this.ctx.strokeStyle = color;

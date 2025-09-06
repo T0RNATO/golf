@@ -3,48 +3,15 @@ import {Ball} from "./ball.ts";
 import {type C2S, handlePacket, type S2C, sendPacket} from "@common/packets.ts";
 import {Vec} from "@common/vec.ts";
 import levels, {lobby} from "./levels.ts";
-
-type vec4 = [number, number, number, number];
-type vec8 = [number, number, number, number, number, number, number, number];
-type wall = {
-    start: Vec, end: Vec,
-}
+import level from "@common/level.ts";
 
 export const config = {
     friction: 1 - 0.01,
     puttPower: 40,
-    __geoRaw: [] as (vec4 | vec8)[],
-    set geoRaw(v: (vec4 | vec8)[]) {
-        this.__geoRaw = v;
-        this.geo = v.map(el => {
-            const moving = el.length === 8;
-            return {
-                start: new Vec(el[0], el[1]),
-                end: new Vec(el[2], el[3]),
-                lerp: moving ? null : {
-                    // @ts-expect-error
-                    start: new Vec(el[4], el[5]),
-                    // @ts-expect-error
-                    end: new Vec(el[6], el[7]),
-                }
-            }
-        });
-    },
-    get geoRaw() {
-        return this.__geoRaw
-    },
-    geo: [] as (wall & {lerp: null | wall})[],
-    slopes: [] as [number, number, number, number, number][],
-    boosters: [] as [number, number, number][],
-    hole: null as Vec | null,
-    pegs: [] as [number, number][],
+    level,
 }
 
-config.geoRaw = lobby.geo;
-config.slopes = lobby.slopes;
-config.boosters = lobby.boosters;
-config.pegs = lobby.pegs;
-config.hole = lobby.hole ? new Vec(...lobby.hole): null;
+config.level.setLevel(lobby);
 
 const server = Bun.serve({
     fetch(req, server) {
@@ -63,11 +30,7 @@ const server = Bun.serve({
             sendPacket(ws, {
                 type: "join",
                 token: ws.data,
-                geo: config.geoRaw,
-                slopes: config.slopes,
-                boosters: config.boosters,
-                pegs: config.pegs,
-                hole: config.hole?.arr(),
+                ...config.level.networkLevel,
             })
             if (players.has(ws.data)) {
                 activePlayers.add(ws.data);
@@ -137,22 +100,28 @@ interface Player {
 
 const activePlayers: Set<string> = new Set();
 export const players: Map<string, Player> = new Map();
-let tick = 0;
+let clientUpdateInterval = 0;
+let movingWallLerp = -500;
 
 setInterval(() => {
-    tick++;
-    for (const ball of Object.values(Ball.ALL)) {
-        ball.tick();
+    clientUpdateInterval++;
+    movingWallLerp++;
+    if (movingWallLerp >= 500) {
+        movingWallLerp = -500;
     }
-    if (tick >= 5) {
+    for (const ball of Object.values(Ball.ALL)) {
+        ball.tick(Math.abs(movingWallLerp / 500));
+    }
+    if (clientUpdateInterval >= 5) {
         publish({
             type: "tick",
             balls: Object.fromEntries(Object.entries(Ball.ALL).map(([id, ball]) => [id, {
                 velocity: ball.velocity.arr(),
                 position: ball.position.arr(),
-            }]))
+            }])),
+            lerp: movingWallLerp,
         })
-        tick = 0;
+        clientUpdateInterval = 0;
     }
 }, 10);
 

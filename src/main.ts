@@ -1,10 +1,11 @@
 import './css/style.css'
 import {Canvas, type Drawable} from "./canvas.ts";
 import {Ball} from "./ball.ts";
-import {handlePacket, type JoinPacket, type S2C, sendPacket} from "./common/packets.ts";
+import {handlePacket, type S2C, sendPacket} from "./common/packets.ts";
 import {Vec} from "./common/vec.ts";
 import * as rendering from "./rendering.ts";
 import * as levelEditor from "./levelEditor.ts";
+import level from "./common/level.ts";
 
 const serverURI = "ws://localhost:3000"
 
@@ -28,47 +29,8 @@ let token = getCookie("token");
 export const global = {
     levelEditing: false,
     ws: new WebSocket(serverURI + (token ? `?token=${token}` : '')),
-    level: {
-        geo: [] as {start: Vec, end: Vec}[],
-        slopes: [] as {
-            pos: Vec,
-            dimensions: Vec,
-            angle: number,
-        }[],
-        boosters: [] as {
-            pos: Vec,
-            angle: number
-        }[],
-        hole: null as Vec | null,
-        pegs: [] as Vec[],
-
-        set packet(packet: JoinPacket) {
-            this.geo = packet.geo.map(el => {return {
-                start: new Vec(el[0], el[1]),
-                end: new Vec(el[2], el[3]),
-            }});
-            this.slopes = packet.slopes.map(slope => {return {
-                pos: new Vec(slope[0], slope[1]),
-                dimensions: new Vec(slope[2], slope[3]),
-                angle: slope[4],
-            }});
-            this.boosters = packet.boosters.map(booster => {return {
-                pos: new Vec(booster[0], booster[1]),
-                angle: booster[2],
-            }});
-            this.hole = packet.hole ? new Vec(...packet.hole): null;
-            this.pegs = packet.pegs.map(peg => new Vec(...peg));
-        },
-
-        get packet(): Partial<JoinPacket> {
-            return {
-                geo: this.geo.map(el => [...el.start.arr(), ...el.end.arr()]),
-                slopes: this.slopes.map(el => [...el.pos.arr(), ...el.dimensions.arr(), el.angle]),
-                boosters: this.boosters.map(el => [...el.pos.arr(), el.angle]),
-                pegs: this.pegs.map(el => [...el.arr()])
-            }
-        }
-    }
+    level,
+    wallLerp: 0
 }
 
 const colourEls = Array.from(document.querySelectorAll<HTMLInputElement>("#color > input"));
@@ -115,7 +77,7 @@ function addScoreboardRow(id: string, name: string) {
 function onMessage(ev: MessageEvent) {
     handlePacket<S2C>(ev.data, {
         join(packet) {
-            global.level.packet = packet;
+            global.level.setLevel(packet);
             document.cookie = `token=${packet.token}`
             token = packet.token;
         },
@@ -134,6 +96,7 @@ function onMessage(ev: MessageEvent) {
                     }
                 }
             }
+            global.wallLerp = packet.lerp;
         },
 
         sunk() {

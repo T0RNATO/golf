@@ -1,22 +1,12 @@
-export interface Level {
-    slopes: [number, number, number, number, number][]
-    boosters: [number, number, number][]
-    geo: ([number, number, number, number] | [number, number, number, number, number, number, number, number])[]
-    hole?: [number, number],
-    pegs: [number, number][],
-}
+import type {NetworkLevel} from "@common/level.ts";
 
-export const lobby: Level = {
+export const lobby: NetworkLevel = {
     "geo": [
         [
             0,
             0,
             1000,
             0,
-            1000,
-            0,
-            2000,
-            0
         ],
         [
             1000,
@@ -183,6 +173,18 @@ export const lobby: Level = {
             500
         ],
     ],
+    mvWalls: [
+        [
+            500,
+            0,
+            500,
+            150,
+            500,
+            -150,
+            500,
+            0
+        ],
+    ]
 };
 
 export default [
@@ -251,5 +253,6 @@ export default [
         ],
         hole: [0, 0],
         pegs: [],
+        mvWalls: []
     }
-] satisfies Level[]
+] satisfies NetworkLevel[]

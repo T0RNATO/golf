@@ -1,8 +1,11 @@
 import {canvas as c, drawable, global} from "./main.ts";
+import type level from "./common/level.ts";
+import type {Vec} from "./common/vec.ts";
 
 const arrow = "m0 -42l-26 30 l20-5 l-10 60 l30 0l-10-60 20 5z";
-const wallColour = "#bd77b3";
 const floorColour = "#f2a7e8";
+const wallColour = "#bd77b3";
+const movingWallColour = "#8a5682";
 
 function drawSlopes() {
     for (const slope of global.level.slopes) {
@@ -63,20 +66,26 @@ export function register() {
 
             const g = global.level.geo;
 
-            let currPath0 = g[0];
+            let currentPathStart = g[0];
             const boundary = c.newPath(g[0].start);
             for (let i = 1; i < g.length; i++) {
-                if (g[i].start.equals(g[i-1].end)) {
+                const currentWall = g[i];
+                // If the next wall joins with the previous, continue the path with the endpoint
+                if (currentWall.start.equals(g[i-1].end)) {
                     boundary.path(g[i].start);
-                } else {
+                }
+                // Or, if the next wall is disconnected from the previous,
+                else {
+                    // Complete the path of the previous section
                     boundary.path(g[i-1].end);
-                    boundary.path(currPath0.end);
-                    boundary.jump(g[i].start);
-                    currPath0 = g[i];
+                    boundary.path(currentPathStart.end);
+                    // And draw the new wall
+                    boundary.jump(currentWall.start);
+                    currentPathStart = currentWall;
                 }
             }
             boundary.path(g.at(-1)!.end);
-            boundary.path(currPath0.end);
+            boundary.path(currentPathStart.end);
 
             // Draw floor
             c.fill(floorColour, boundary);
@@ -90,10 +99,18 @@ export function register() {
             for (const peg of global.level.pegs) {
                 c.circle(peg, 12, wallColour);
             }
+            for (const wall of global.level.movingWalls) {
+                c.segment(...resolveMovingWall(wall), 25, movingWallColour);
+            }
 
             if (global.levelEditing) {
                 c.stroke(2, "red", boundary);
             }
         }
     }))
+}
+
+function resolveMovingWall(wall: (typeof level)["movingWalls"][number]): [Vec, Vec] {
+    const lerp = Math.abs(global.wallLerp) / 500;
+    return [wall.start.start.add(wall.end.start.sub(wall.start.start).mul(lerp)), wall.start.end.add(wall.end.end.sub(wall.start.end).mul(lerp))]
 }
