@@ -1,7 +1,7 @@
 export interface Level {
     slopes: [number, number, number, number, number][]
     boosters: [number, number, number][]
-    geo: [number, number, number, number][]
+    geo: ([number, number, number, number] | [number, number, number, number, number, number, number, number])[]
     hole?: [number, number],
     pegs: [number, number][],
 }
@@ -12,6 +12,10 @@ export const lobby: Level = {
             0,
             0,
             1000,
+            0,
+            1000,
+            0,
+            2000,
             0
         ],
         [

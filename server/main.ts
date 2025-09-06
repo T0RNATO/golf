@@ -5,22 +5,35 @@ import {Vec} from "@common/vec.ts";
 import levels, {lobby} from "./levels.ts";
 
 type vec4 = [number, number, number, number];
+type vec8 = [number, number, number, number, number, number, number, number];
+type wall = {
+    start: Vec, end: Vec,
+}
 
 export const config = {
     friction: 1 - 0.01,
     puttPower: 40,
-    __geoRaw: [] as vec4[],
-    set geoRaw(v: vec4[]) {
+    __geoRaw: [] as (vec4 | vec8)[],
+    set geoRaw(v: (vec4 | vec8)[]) {
         this.__geoRaw = v;
-        this.geo = v.map(el => {return {
-            start: new Vec(el[0], el[1]),
-            end: new Vec(el[2], el[3]),
-        }});
+        this.geo = v.map(el => {
+            const moving = el.length === 8;
+            return {
+                start: new Vec(el[0], el[1]),
+                end: new Vec(el[2], el[3]),
+                lerp: moving ? null : {
+                    // @ts-expect-error
+                    start: new Vec(el[4], el[5]),
+                    // @ts-expect-error
+                    end: new Vec(el[6], el[7]),
+                }
+            }
+        });
     },
     get geoRaw() {
         return this.__geoRaw
     },
-    geo: [] as {start: Vec, end: Vec}[],
+    geo: [] as (wall & {lerp: null | wall})[],
     slopes: [] as [number, number, number, number, number][],
     boosters: [] as [number, number, number][],
     hole: null as Vec | null,
